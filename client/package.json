@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@rollup/wasm-node": "^4.60.2",
+    "@types/node": "^24.0.0",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.6",
     "@vitejs/plugin-react": "^4.4.1",
