@@ -1,6 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+if (process.platform !== 'win32') {
+  process.exit(0);
+}
+
 const target = path.resolve('node_modules/rollup/dist/native.js');
 
 if (!existsSync(target)) {
