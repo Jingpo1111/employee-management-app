@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --canvas: 244 247 251;
+  --surface: 255 255 255;
+  --border: 226 232 240;
+  --text: 15 23 42;
+  --muted: 100 116 139;
+  --accent: 12 74 110;
+  --accent-soft: 224 242 254;
+  --success: 22 163 74;
+  --warning: 217 119 6;
+  --danger: 220 38 38;
+}
+
+.dark {
+  color-scheme: dark;
+  --canvas: 9 14 26;
+  --surface: 15 23 42;
+  --border: 51 65 85;
+  --text: 226 232 240;
+  --muted: 148 163 184;
+  --accent: 56 189 248;
+  --accent-soft: 8 47 73;
+  --success: 74 222 128;
+  --warning: 251 191 36;
+  --danger: 248 113 113;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-canvas text-text font-sans antialiased;
+  background-image:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.12), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.1), transparent 22%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-canvas;
+}
+
+@layer components {
+  .panel {
+    @apply rounded-panel border border-border/70 bg-surface/90 shadow-card backdrop-blur;
+  }
+
+  .subtle-ring {
+    @apply border border-white/20 dark:border-white/10;
+  }
+}

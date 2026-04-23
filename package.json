@@ -1,0 +1,16 @@
+{
+  "name": "employee-management-platform",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "setup": "npm install && npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "lint": "npm run lint --prefix server && npm run lint --prefix client",
+    "seed": "npm run seed --prefix server",
+    "start": "npm run start --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

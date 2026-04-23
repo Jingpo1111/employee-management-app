@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  REMOTE
+  LEAVE
+  ABSENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  role         Role
+  employee     Employee?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Employee {
+  id                String               @id @default(cuid())
+  userId            String               @unique
+  employeeCode      String               @unique
+  fullName          String
+  title             String
+  department        String
+  team              String
+  phone             String?
+  location          String
+  status            String
+  bio               String?
+  avatar            String?
+  startDate         DateTime
+  performanceScore  Int                  @default(0)
+  managerName       String?
+  permissions       String[]
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attendanceRecords AttendanceRecord[]
+  tasks             Task[]
+  notifications     Notification[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+}
+
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  employeeId  String
+  date        DateTime
+  checkIn     String?
+  checkOut    String?
+  status      AttendanceStatus
+  hoursWorked Float?
+  note        String?
+  employee    Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  employeeId  String
+  title       String
+  description String?
+  priority    String
+  dueDate     DateTime
+  status      TaskStatus
+  employee    Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  employeeId  String
+  title       String
+  message     String
+  read        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
