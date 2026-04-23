@@ -6,13 +6,21 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const styles = {
-  primary: 'bg-accent text-white hover:opacity-90 dark:text-slate-950',
-  secondary: 'bg-accentSoft text-accent hover:bg-accentSoft/80',
-  ghost: 'bg-transparent text-text hover:bg-border/50',
-  danger: 'bg-danger text-white hover:opacity-90'
+  primary: 'gradient-stroke p-[1px] text-white shadow-glow [&>span]:bg-[rgb(32,46,78)] [&>span]:text-white dark:[&>span]:bg-[rgb(255,125,92)] dark:[&>span]:text-slate-950',
+  secondary: 'bg-accentSoft text-accent border border-accent/10 hover:bg-accent hover:text-white',
+  ghost: 'bg-transparent text-text border border-border hover:bg-surface/80',
+  danger: 'bg-danger text-white border border-danger/30 hover:shadow-glow'
 };
 
-export function Button({ className, variant = 'primary', ...props }: ButtonProps) {
+export function Button({ className, variant = 'primary', children, ...props }: ButtonProps) {
+  if (variant === 'primary') {
+    return (
+      <button className={cn('inline-flex rounded-2xl text-sm font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-60', styles.primary, className)} {...props}>
+        <span className="inline-flex w-full items-center justify-center rounded-[calc(1rem-1px)] px-4 py-2.5">{children}</span>
+      </button>
+    );
+  }
+
   return (
     <button
       className={cn(
@@ -21,6 +29,8 @@ export function Button({ className, variant = 'primary', ...props }: ButtonProps
         className
       )}
       {...props}
-    />
+    >
+      {children}
+    </button>
   );
 }

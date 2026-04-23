@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, Download, Pencil, Plus, Search, ShieldCheck, Trash2, UserRoundPlus } from 'lucide-react';
+import { ArrowLeft, Download, Pencil, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react';
 import { apiFetch, downloadFile } from '../../lib/api';
 import { formatDate } from '../../lib/utils';
 import { AdminDashboardResponse, Employee, PaginatedEmployees } from '../../types';
@@ -34,6 +34,22 @@ const defaultForm = {
   permissions: ['profile:view', 'profile:edit', 'tasks:view', 'attendance:view'],
   startDate: new Date().toISOString().slice(0, 10)
 };
+
+function SectionHero({ eyebrow, title, description, actions }: { eyebrow: string; title: string; description: string; actions?: React.ReactNode }) {
+  return (
+    <section className="panel-strong relative overflow-hidden p-6 sm:p-8">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,138,100,0.22),transparent_24%),radial-gradient(circle_at_85%_20%,rgba(45,212,191,0.18),transparent_20%),radial-gradient(circle_at_75%_78%,rgba(59,130,246,0.16),transparent_25%)]" />
+      <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-2xl">
+          <div className="hero-chip">{eyebrow}</div>
+          <h3 className="mt-4 font-display text-3xl font-semibold sm:text-4xl">{title}</h3>
+          <p className="mt-3 max-w-xl text-sm text-slate-300 sm:text-base">{description}</p>
+        </div>
+        {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      </div>
+    </section>
+  );
+}
 
 function EmployeeForm({
   initialValue,
@@ -114,22 +130,34 @@ export function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 xl:grid-cols-4 md:grid-cols-2">
-        {data.stats.map((stat) => <StatCard key={stat.label} stat={stat} />)}
+      <SectionHero
+        eyebrow="Operations cockpit"
+        title="See the team pulse before you touch the table."
+        description="A more colorful command surface helps scan headcount, attendance movement, and operational attention without flattening everything into the same tone."
+        actions={<Link to="/admin/employees"><Button>Open directory</Button></Link>}
+      />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {data.stats.map((stat, index) => <StatCard key={stat.label} stat={stat} index={index} />)}
       </div>
+
       <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
         <AttendanceTrendChart data={data.attendanceTrend} />
         <DepartmentChart data={data.employeesByDepartment} />
       </div>
-      <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h3 className="font-display text-lg font-semibold">Fast management patterns</h3>
-          <p className="text-sm text-muted">Use segmented filters, progressive disclosure, and export actions close to the table to reduce admin friction.</p>
-        </div>
-        <Link to="/admin/employees" className="inline-flex items-center gap-2 text-sm font-semibold text-accent">
-          Open employee directory <ArrowRight className="h-4 w-4" />
-        </Link>
-      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted">UX pattern</p>
+          <h4 className="mt-3 font-display text-2xl font-semibold">Keep heavy admin actions close to the dataset, not hidden in global menus.</h4>
+          <p className="mt-3 text-sm text-muted">Filters, export, and create actions now sit in a clear band above the directory. It reduces scanning distance and improves touch interaction on smaller screens.</p>
+        </Card>
+        <Card className="bg-[linear-gradient(135deg,rgba(255,138,100,0.18),rgba(14,165,140,0.12))]">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted">Design principle</p>
+          <h4 className="mt-3 font-display text-2xl font-semibold">Signal over chrome</h4>
+          <p className="mt-3 text-sm text-muted">Bright accents mark what matters. Neutral surfaces hold everything else back.</p>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -184,36 +212,37 @@ export function AdminEmployeesPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <h3 className="font-display text-lg font-semibold">Employee directory</h3>
-          <p className="text-sm text-muted">Search by name, role, code, or email. Keep destructive actions separated from edit actions.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => downloadFile('/admin/employees/export?format=csv', 'employees.csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
-          <Button variant="secondary" onClick={() => downloadFile('/admin/employees/export?format=pdf', 'employees.pdf')}><Download className="mr-2 h-4 w-4" />PDF</Button>
-          <Button onClick={() => { setEditingEmployee(null); setModalOpen(true); }}><Plus className="mr-2 h-4 w-4" />Add employee</Button>
-        </div>
-      </Card>
+      <SectionHero
+        eyebrow="Directory"
+        title="Manage employees without turning the screen into a spreadsheet wall."
+        description="The desktop view preserves density; mobile shifts to stacked profile cards so search, filter, and actions stay touch-friendly."
+        actions={(
+          <>
+            <Button variant="secondary" onClick={() => downloadFile('/admin/employees/export?format=csv', 'employees.csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
+            <Button variant="secondary" onClick={() => downloadFile('/admin/employees/export?format=pdf', 'employees.pdf')}><Download className="mr-2 h-4 w-4" />PDF</Button>
+            <Button onClick={() => { setEditingEmployee(null); setModalOpen(true); }}><Plus className="mr-2 h-4 w-4" />Add employee</Button>
+          </>
+        )}
+      />
 
       <Card className="space-y-4">
-        <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
+        <div className="grid gap-3 xl:grid-cols-[1.6fr_1fr_1fr_1fr]">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <Input className="pl-11" placeholder="Search employees" value={search} onChange={(event) => { setPage(1); setSearch(event.target.value); }} />
+            <Input className="pl-11" placeholder="Search by name, role, code, or email" value={search} onChange={(event) => { setPage(1); setSearch(event.target.value); }} />
           </div>
-          <select className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm" value={department} onChange={(event) => { setPage(1); setDepartment(event.target.value); }}>
+          <select className="rounded-2xl border border-border/90 bg-white/80 px-4 py-3 text-sm dark:bg-surface/80" value={department} onChange={(event) => { setPage(1); setDepartment(event.target.value); }}>
             <option value="">All departments</option>
             {departments.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
-          <select className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+          <select className="rounded-2xl border border-border/90 bg-white/80 px-4 py-3 text-sm dark:bg-surface/80" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
             <option value="fullName">Name</option>
             <option value="department">Department</option>
             <option value="performanceScore">Performance</option>
             <option value="startDate">Start date</option>
             <option value="status">Status</option>
           </select>
-          <select className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm" value={sortOrder} onChange={(event) => setSortOrder(event.target.value as 'asc' | 'desc')}>
+          <select className="rounded-2xl border border-border/90 bg-white/80 px-4 py-3 text-sm dark:bg-surface/80" value={sortOrder} onChange={(event) => setSortOrder(event.target.value as 'asc' | 'desc')}>
             <option value="asc">Ascending</option>
             <option value="desc">Descending</option>
           </select>
@@ -222,52 +251,87 @@ export function AdminEmployeesPage() {
         {isLoading ? <LoadingState label="Loading employee directory..." /> : null}
 
         {!isLoading && data?.data.length ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Employee</th>
-                  <th className="px-4 py-3 font-medium">Department</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Performance</th>
-                  <th className="px-4 py-3 font-medium">Start date</th>
-                  <th className="px-4 py-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.data.map((employee) => (
-                  <tr key={employee.id} className="border-t border-border/70">
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <img className="h-11 w-11 rounded-2xl object-cover" src={employee.avatar || 'https://placehold.co/80x80'} alt={employee.fullName} />
-                        <div>
-                          <p className="font-semibold">{employee.fullName}</p>
-                          <p className="text-muted">{employee.title} • {employee.user.email}</p>
-                        </div>
+          <>
+            <div className="grid gap-4 lg:hidden">
+              {data.data.map((employee) => (
+                <div key={employee.id} className="metric-tile">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img className="h-14 w-14 rounded-[1.2rem] object-cover" src={employee.avatar || 'https://placehold.co/96x96'} alt={employee.fullName} />
+                      <div>
+                        <p className="font-semibold">{employee.fullName}</p>
+                        <p className="text-sm text-muted">{employee.title}</p>
+                        <p className="text-xs text-muted">{employee.user.email}</p>
                       </div>
-                    </td>
-                    <td className="px-4 py-4">{employee.department}<div className="text-muted">{employee.team}</div></td>
-                    <td className="px-4 py-4"><Badge label={employee.status} variant={employee.status === 'Active' ? 'success' : 'warning'} /></td>
-                    <td className="px-4 py-4">{employee.performanceScore}%</td>
-                    <td className="px-4 py-4">{formatDate(employee.startDate)}</td>
-                    <td className="px-4 py-4">
-                      <div className="flex gap-2">
-                        <Link className="rounded-2xl border border-border p-2 hover:bg-border/40" to={`/admin/employees/${employee.id}`} aria-label={`View ${employee.fullName}`}>
-                          <ShieldCheck className="h-4 w-4" />
-                        </Link>
-                        <button className="rounded-2xl border border-border p-2 hover:bg-border/40" onClick={() => { setEditingEmployee(employee); setModalOpen(true); }} aria-label={`Edit ${employee.fullName}`}>
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button className="rounded-2xl border border-border p-2 text-danger hover:bg-danger/10" onClick={() => deleteMutation.mutate(employee.id)} aria-label={`Delete ${employee.fullName}`}>
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+                    </div>
+                    <Badge label={employee.status} variant={employee.status === 'Active' ? 'success' : 'warning'} />
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted">Department</p>
+                      <p className="mt-1 font-medium">{employee.department}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted">Performance</p>
+                      <p className="mt-1 font-medium">{employee.performanceScore}%</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Link className="flex-1" to={`/admin/employees/${employee.id}`}><Button variant="ghost" className="w-full"><ShieldCheck className="mr-2 h-4 w-4" />View</Button></Link>
+                    <Button variant="ghost" onClick={() => { setEditingEmployee(employee); setModalOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="danger" onClick={() => deleteMutation.mutate(employee.id)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-muted">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Employee</th>
+                    <th className="px-4 py-3 font-medium">Department</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Performance</th>
+                    <th className="px-4 py-3 font-medium">Start date</th>
+                    <th className="px-4 py-3 font-medium">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {data.data.map((employee) => (
+                    <tr key={employee.id} className="border-t border-border/70">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <img className="h-12 w-12 rounded-[1.2rem] object-cover" src={employee.avatar || 'https://placehold.co/80x80'} alt={employee.fullName} />
+                          <div>
+                            <p className="font-semibold">{employee.fullName}</p>
+                            <p className="text-muted">{employee.title} • {employee.user.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">{employee.department}<div className="text-muted">{employee.team}</div></td>
+                      <td className="px-4 py-4"><Badge label={employee.status} variant={employee.status === 'Active' ? 'success' : 'warning'} /></td>
+                      <td className="px-4 py-4">{employee.performanceScore}%</td>
+                      <td className="px-4 py-4">{formatDate(employee.startDate)}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex gap-2">
+                          <Link className="rounded-2xl border border-border p-2 hover:bg-border/40" to={`/admin/employees/${employee.id}`} aria-label={`View ${employee.fullName}`}>
+                            <ShieldCheck className="h-4 w-4" />
+                          </Link>
+                          <button className="rounded-2xl border border-border p-2 hover:bg-border/40" onClick={() => { setEditingEmployee(employee); setModalOpen(true); }} aria-label={`Edit ${employee.fullName}`}>
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button className="rounded-2xl border border-border p-2 text-danger hover:bg-danger/10" onClick={() => deleteMutation.mutate(employee.id)} aria-label={`Delete ${employee.fullName}`}>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : null}
 
         {!isLoading && !data?.data.length ? (
@@ -320,7 +384,7 @@ export function AdminEmployeeDetailPage() {
   const { id } = useParams();
   const { data, isLoading } = useQuery({
     queryKey: ['employee-detail', id],
-    queryFn: () => apiFetch<Employee & { attendanceRecords: any[]; tasks: any[]; notifications: any[] }>(`/admin/employees/${id}`),
+    queryFn: () => apiFetch<Employee & { attendanceRecords: Array<{ id: string; date: string; checkIn?: string | null; checkOut?: string | null; status: string }>; tasks: Array<{ id: string; title: string; description?: string | null; status: string }> }>(`/admin/employees/${id}`),
     enabled: Boolean(id)
   });
 
@@ -330,31 +394,35 @@ export function AdminEmployeeDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" onClick={() => navigate(-1)}>Back</Button>
-      <Card className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex items-center gap-4">
-          <img className="h-20 w-20 rounded-3xl object-cover" src={data.avatar || 'https://placehold.co/120x120'} alt={data.fullName} />
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-muted">{data.employeeCode}</p>
-            <h3 className="font-display text-3xl font-semibold">{data.fullName}</h3>
-            <p className="text-muted">{data.title} • {data.department} • {data.location}</p>
+      <Button variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
+
+      <section className="panel-strong relative overflow-hidden p-6 sm:p-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,138,100,0.22),transparent_24%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.18),transparent_20%)]" />
+        <div className="relative z-10 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-center gap-4">
+            <img className="h-20 w-20 rounded-[1.7rem] object-cover" src={data.avatar || 'https://placehold.co/120x120'} alt={data.fullName} />
+            <div>
+              <p className="text-sm uppercase tracking-[0.22em] text-slate-300">{data.employeeCode}</p>
+              <h3 className="mt-2 font-display text-3xl font-semibold">{data.fullName}</h3>
+              <p className="mt-2 text-sm text-slate-300">{data.title} • {data.department} • {data.location}</p>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[1.4rem] bg-white/10 px-4 py-4 backdrop-blur"><p className="text-xs uppercase tracking-[0.18em] text-slate-300">Status</p><p className="mt-2 text-lg font-semibold">{data.status}</p></div>
+            <div className="rounded-[1.4rem] bg-white/10 px-4 py-4 backdrop-blur"><p className="text-xs uppercase tracking-[0.18em] text-slate-300">Performance</p><p className="mt-2 text-lg font-semibold">{data.performanceScore}%</p></div>
+            <div className="rounded-[1.4rem] bg-white/10 px-4 py-4 backdrop-blur"><p className="text-xs uppercase tracking-[0.18em] text-slate-300">Manager</p><p className="mt-2 text-lg font-semibold">{data.managerName || 'Not assigned'}</p></div>
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-border px-4 py-3"><p className="text-xs uppercase tracking-[0.2em] text-muted">Status</p><p className="mt-2 text-lg font-semibold">{data.status}</p></div>
-          <div className="rounded-2xl border border-border px-4 py-3"><p className="text-xs uppercase tracking-[0.2em] text-muted">Performance</p><p className="mt-2 text-lg font-semibold">{data.performanceScore}%</p></div>
-          <div className="rounded-2xl border border-border px-4 py-3"><p className="text-xs uppercase tracking-[0.2em] text-muted">Manager</p><p className="mt-2 text-lg font-semibold">{data.managerName || 'Not assigned'}</p></div>
-        </div>
-      </Card>
+      </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Card>
-          <h3 className="font-display text-lg font-semibold">Attendance history</h3>
+          <h3 className="font-display text-xl font-semibold">Attendance history</h3>
           <div className="mt-4 space-y-3">
-            {data.attendanceRecords.map((record: any) => (
-              <div key={record.id} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3">
+            {data.attendanceRecords.map((record) => (
+              <div key={record.id} className="metric-tile flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-medium">{formatDate(record.date)}</p>
+                  <p className="font-semibold">{formatDate(record.date)}</p>
                   <p className="text-sm text-muted">{record.checkIn || 'No check-in'} to {record.checkOut || 'No check-out'}</p>
                 </div>
                 <Badge label={record.status} variant={record.status === 'PRESENT' ? 'success' : record.status === 'REMOTE' ? 'info' : 'warning'} />
@@ -365,12 +433,12 @@ export function AdminEmployeeDetailPage() {
 
         <div className="space-y-6">
           <Card>
-            <h3 className="font-display text-lg font-semibold">Assigned tasks</h3>
+            <h3 className="font-display text-xl font-semibold">Assigned tasks</h3>
             <div className="mt-4 space-y-3">
-              {data.tasks.map((task: any) => (
-                <div key={task.id} className="rounded-2xl border border-border px-4 py-3">
+              {data.tasks.map((task) => (
+                <div key={task.id} className="metric-tile">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium">{task.title}</p>
+                    <p className="font-semibold">{task.title}</p>
                     <Badge label={task.status.replace('_', ' ')} variant={task.status === 'DONE' ? 'success' : 'info'} />
                   </div>
                   <p className="mt-2 text-sm text-muted">{task.description}</p>
@@ -378,8 +446,9 @@ export function AdminEmployeeDetailPage() {
               ))}
             </div>
           </Card>
+
           <Card>
-            <h3 className="font-display text-lg font-semibold">Permissions</h3>
+            <h3 className="font-display text-xl font-semibold">Permissions</h3>
             <div className="mt-4 flex flex-wrap gap-2">
               {data.permissions.map((permission) => <Badge key={permission} label={permission} variant="info" />)}
             </div>

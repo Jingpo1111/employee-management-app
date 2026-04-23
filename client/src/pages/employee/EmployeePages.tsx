@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Bell, BriefcaseBusiness, Clock3, PencilLine, Sparkles } from 'lucide-react';
+import { Bell, Clock3, PencilLine, Sparkles, Target } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/api';
 import { formatDate } from '../../lib/utils';
@@ -13,6 +13,19 @@ import { LoadingState } from '../../components/ui/LoadingState';
 import { Textarea } from '../../components/ui/Textarea';
 import { useAuth } from '../../context/AuthContext';
 
+function SectionHero({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+  return (
+    <section className="panel-strong relative overflow-hidden p-6 sm:p-8">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,138,100,0.22),transparent_24%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.18),transparent_20%),radial-gradient(circle_at_75%_78%,rgba(59,130,246,0.16),transparent_25%)]" />
+      <div className="relative z-10 max-w-2xl">
+        <div className="hero-chip">{eyebrow}</div>
+        <h3 className="mt-4 font-display text-3xl font-semibold sm:text-4xl">{title}</h3>
+        <p className="mt-3 text-sm text-slate-300 sm:text-base">{description}</p>
+      </div>
+    </section>
+  );
+}
+
 export function EmployeeOverviewPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['employee-dashboard'],
@@ -24,49 +37,43 @@ export function EmployeeOverviewPage() {
   }
 
   const cards = [
-    { label: 'Performance score', value: `${data.overview.performanceScore}%`, icon: Sparkles },
-    { label: 'Attendance rate', value: data.overview.attendanceRate, icon: Clock3 },
-    { label: 'Completed tasks', value: String(data.overview.completedTasks), icon: BriefcaseBusiness },
-    { label: 'Unread messages', value: String(data.notifications.filter((item) => !item.read).length), icon: Bell }
+    { label: 'Performance score', value: `${data.overview.performanceScore}%`, icon: Sparkles, tint: 'from-[#ff8a64] to-[#f59e0b]' },
+    { label: 'Attendance rate', value: data.overview.attendanceRate, icon: Clock3, tint: 'from-[#14b8a6] to-[#0ea5e9]' },
+    { label: 'Completed tasks', value: String(data.overview.completedTasks), icon: Target, tint: 'from-[#2563eb] to-[#38bdf8]' },
+    { label: 'Unread messages', value: String(data.notifications.filter((item) => !item.read).length), icon: Bell, tint: 'from-[#ef4444] to-[#fb7185]' }
   ];
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden bg-gradient-to-r from-accent to-cyan-500 text-white dark:text-slate-950">
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-white/80 dark:text-slate-900/70">Personal dashboard</p>
-            <h3 className="mt-3 font-display text-3xl font-semibold">{data.overview.name}</h3>
-            <p className="mt-2 max-w-xl text-sm text-white/90 dark:text-slate-900/80">Your workspace is structured for quick scanning: recent attendance first, active work second, and messages third.</p>
-          </div>
-          <div className="rounded-3xl bg-white/15 p-5 backdrop-blur">
-            <p className="text-sm font-semibold">Current role</p>
-            <p className="mt-2 text-2xl font-semibold">{data.overview.title}</p>
-            <p className="mt-1 text-sm">{data.overview.department}</p>
-          </div>
-        </div>
-      </Card>
+      <SectionHero
+        eyebrow="My dashboard"
+        title={`Welcome back, ${data.overview.name.split(' ')[0]}.`}
+        description="Your personal dashboard is organized for fast scanning: current standing first, then attendance, active work, and admin messages."
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {cards.map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-muted">{label}</p>
-              <p className="mt-2 font-display text-3xl font-semibold">{value}</p>
+        {cards.map(({ label, value, icon: Icon, tint }) => (
+          <Card key={label} className="relative overflow-hidden">
+            <div className={`absolute inset-x-5 top-0 h-1 rounded-full bg-gradient-to-r ${tint}`} />
+            <div className="flex items-center justify-between gap-4 pt-2">
+              <div>
+                <p className="text-sm text-muted">{label}</p>
+                <p className="mt-2 font-display text-3xl font-semibold">{value}</p>
+              </div>
+              <div className="rounded-[1.2rem] bg-accentSoft p-3 text-accent"><Icon className="h-5 w-5" /></div>
             </div>
-            <div className="rounded-2xl bg-accentSoft p-3 text-accent"><Icon className="h-5 w-5" /></div>
           </Card>
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
         <Card>
-          <h3 className="font-display text-lg font-semibold">Attendance</h3>
+          <h3 className="font-display text-xl font-semibold">Attendance</h3>
           <div className="mt-4 space-y-3">
             {data.attendance.map((item) => (
-              <div key={item.id} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3">
+              <div key={item.id} className="metric-tile flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-medium">{formatDate(item.date)}</p>
+                  <p className="font-semibold">{formatDate(item.date)}</p>
                   <p className="text-sm text-muted">{item.checkIn || 'No check-in'} to {item.checkOut || 'No check-out'}</p>
                 </div>
                 <Badge label={item.status} variant={item.status === 'PRESENT' ? 'success' : item.status === 'REMOTE' ? 'info' : 'warning'} />
@@ -76,13 +83,13 @@ export function EmployeeOverviewPage() {
         </Card>
 
         <Card>
-          <h3 className="font-display text-lg font-semibold">Current tasks</h3>
+          <h3 className="font-display text-xl font-semibold">Current tasks</h3>
           <div className="mt-4 space-y-3">
             {data.tasks.map((task) => (
-              <div key={task.id} className="rounded-2xl border border-border px-4 py-3">
+              <div key={task.id} className="metric-tile">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-medium">{task.title}</p>
+                    <p className="font-semibold">{task.title}</p>
                     <p className="mt-1 text-sm text-muted">{task.description}</p>
                   </div>
                   <Badge label={task.priority} variant={task.priority === 'High' ? 'danger' : 'info'} />
@@ -98,12 +105,12 @@ export function EmployeeOverviewPage() {
       </div>
 
       <Card>
-        <h3 className="font-display text-lg font-semibold">Messages from admin</h3>
-        <div className="mt-4 space-y-3">
+        <h3 className="font-display text-xl font-semibold">Messages from admin</h3>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {data.notifications.map((item) => (
-            <div key={item.id} className="rounded-2xl border border-border px-4 py-3">
+            <div key={item.id} className="metric-tile">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-medium">{item.title}</p>
+                <p className="font-semibold">{item.title}</p>
                 {!item.read ? <Badge label="New" variant="info" /> : null}
               </div>
               <p className="mt-2 text-sm text-muted">{item.message}</p>
@@ -149,43 +156,51 @@ export function EmployeeProfilePage() {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-      <Card>
-        <div className="flex items-center gap-4">
-          <img className="h-20 w-20 rounded-3xl object-cover" src={data.avatar || 'https://placehold.co/120x120'} alt={data.fullName} />
-          <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-muted">Employee profile</p>
-            <h3 className="font-display text-2xl font-semibold">{data.fullName}</h3>
-            <p className="text-sm text-muted">{data.user.email}</p>
-          </div>
-        </div>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-border px-4 py-3"><p className="text-xs uppercase tracking-[0.2em] text-muted">Department</p><p className="mt-2 font-semibold">{data.department}</p></div>
-          <div className="rounded-2xl border border-border px-4 py-3"><p className="text-xs uppercase tracking-[0.2em] text-muted">Team</p><p className="mt-2 font-semibold">{data.team}</p></div>
-          <div className="rounded-2xl border border-border px-4 py-3"><p className="text-xs uppercase tracking-[0.2em] text-muted">Start date</p><p className="mt-2 font-semibold">{formatDate(data.startDate)}</p></div>
-          <div className="rounded-2xl border border-border px-4 py-3"><p className="text-xs uppercase tracking-[0.2em] text-muted">Manager</p><p className="mt-2 font-semibold">{data.managerName || 'Not assigned'}</p></div>
-        </div>
-      </Card>
+    <div className="space-y-6">
+      <SectionHero
+        eyebrow="Profile"
+        title="Personal details that stay editable without exposing admin-only controls."
+        description="This flow keeps employee self-service lightweight: identity, contact info, and bio are easy to update while team structure stays protected."
+      />
 
-      <Card>
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-accentSoft p-3 text-accent"><PencilLine className="h-5 w-5" /></div>
-          <div>
-            <h3 className="font-display text-lg font-semibold">Edit profile</h3>
-            <p className="text-sm text-muted">Limit editing to personal details. Department, role, and permissions remain admin-controlled.</p>
+      <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+        <Card>
+          <div className="flex items-center gap-4">
+            <img className="h-20 w-20 rounded-[1.6rem] object-cover" src={data.avatar || 'https://placehold.co/120x120'} alt={data.fullName} />
+            <div>
+              <p className="text-sm uppercase tracking-[0.24em] text-muted">Employee profile</p>
+              <h3 className="mt-2 font-display text-2xl font-semibold">{data.fullName}</h3>
+              <p className="text-sm text-muted">{data.user.email}</p>
+            </div>
           </div>
-        </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="metric-tile"><p className="text-xs uppercase tracking-[0.18em] text-muted">Department</p><p className="mt-2 font-semibold">{data.department}</p></div>
+            <div className="metric-tile"><p className="text-xs uppercase tracking-[0.18em] text-muted">Team</p><p className="mt-2 font-semibold">{data.team}</p></div>
+            <div className="metric-tile"><p className="text-xs uppercase tracking-[0.18em] text-muted">Start date</p><p className="mt-2 font-semibold">{formatDate(data.startDate)}</p></div>
+            <div className="metric-tile"><p className="text-xs uppercase tracking-[0.18em] text-muted">Manager</p><p className="mt-2 font-semibold">{data.managerName || 'Not assigned'}</p></div>
+          </div>
+        </Card>
 
-        <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={(event) => { event.preventDefault(); updateMutation.mutate(form); }}>
-          <Field label="Full name"><Input value={form.fullName} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} /></Field>
-          <Field label="Job title"><Input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} /></Field>
-          <Field label="Phone"><Input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} /></Field>
-          <Field label="Location"><Input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} /></Field>
-          <div className="md:col-span-2"><Field label="Avatar URL"><Input value={form.avatar} onChange={(event) => setForm((current) => ({ ...current, avatar: event.target.value }))} /></Field></div>
-          <div className="md:col-span-2"><Field label="Bio"><Textarea value={form.bio} onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))} /></Field></div>
-          <div className="md:col-span-2 flex justify-end"><Button type="submit">{updateMutation.isPending ? 'Saving...' : 'Save changes'}</Button></div>
-        </form>
-      </Card>
+        <Card>
+          <div className="flex items-center gap-3">
+            <div className="rounded-[1.2rem] bg-accentSoft p-3 text-accent"><PencilLine className="h-5 w-5" /></div>
+            <div>
+              <h3 className="font-display text-xl font-semibold">Edit profile</h3>
+              <p className="text-sm text-muted">The form is spaced and grouped for mobile input, not only desktop editing.</p>
+            </div>
+          </div>
+
+          <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={(event) => { event.preventDefault(); updateMutation.mutate(form); }}>
+            <Field label="Full name"><Input value={form.fullName} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} /></Field>
+            <Field label="Job title"><Input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} /></Field>
+            <Field label="Phone"><Input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} /></Field>
+            <Field label="Location"><Input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} /></Field>
+            <div className="md:col-span-2"><Field label="Avatar URL"><Input value={form.avatar} onChange={(event) => setForm((current) => ({ ...current, avatar: event.target.value }))} /></Field></div>
+            <div className="md:col-span-2"><Field label="Bio"><Textarea value={form.bio} onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))} /></Field></div>
+            <div className="md:col-span-2 flex justify-end"><Button type="submit">{updateMutation.isPending ? 'Saving...' : 'Save changes'}</Button></div>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -202,24 +217,34 @@ export function EmployeeWorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <h3 className="font-display text-lg font-semibold">Task pipeline</h3>
-        <div className="mt-4 grid gap-4 lg:grid-cols-4">
-          {['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'].map((status) => (
-            <div key={status} className="rounded-3xl border border-border bg-canvas/70 p-4">
-              <p className="font-semibold">{status.replace('_', ' ')}</p>
-              <div className="mt-4 space-y-3">
-                {data.tasks.filter((task) => task.status === status).map((task) => (
-                  <div key={task.id} className="rounded-2xl border border-border bg-surface px-4 py-3">
-                    <p className="font-medium">{task.title}</p>
-                    <p className="mt-1 text-sm text-muted">{task.description}</p>
-                  </div>
-                ))}
-              </div>
+      <SectionHero
+        eyebrow="Workspace"
+        title="A task board that stays readable on narrow screens."
+        description="Columns collapse cleanly and keep strong visual contrast so status changes are still obvious on mobile."
+      />
+
+      <div className="grid gap-4 xl:grid-cols-4">
+        {['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'].map((status, index) => (
+          <Card key={status} className={index === 1 ? 'bg-[linear-gradient(135deg,rgba(255,138,100,0.12),rgba(255,255,255,0.4))]' : index === 2 ? 'bg-[linear-gradient(135deg,rgba(45,212,191,0.12),rgba(255,255,255,0.35))]' : ''}>
+            <div className="flex items-center justify-between gap-3">
+              <p className="font-display text-lg font-semibold">{status.replace('_', ' ')}</p>
+              <Badge label={String(data.tasks.filter((task) => task.status === status).length)} variant="info" />
             </div>
-          ))}
-        </div>
-      </Card>
+            <div className="mt-4 space-y-3">
+              {data.tasks.filter((task) => task.status === status).map((task) => (
+                <div key={task.id} className="metric-tile">
+                  <p className="font-semibold">{task.title}</p>
+                  <p className="mt-1 text-sm text-muted">{task.description}</p>
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted">
+                    <span>{formatDate(task.dueDate)}</span>
+                    <span>{task.priority}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

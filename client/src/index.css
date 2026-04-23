@@ -1,32 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   color-scheme: light;
-  --canvas: 244 247 251;
+  --canvas: 255 248 239;
   --surface: 255 255 255;
-  --border: 226 232 240;
-  --text: 15 23 42;
-  --muted: 100 116 139;
-  --accent: 12 74 110;
-  --accent-soft: 224 242 254;
-  --success: 22 163 74;
-  --warning: 217 119 6;
-  --danger: 220 38 38;
+  --border: 228 214 199;
+  --text: 30 41 59;
+  --muted: 108 117 137;
+  --accent: 238 93 80;
+  --accent-soft: 255 232 223;
+  --success: 14 165 140;
+  --warning: 233 151 46;
+  --danger: 226 74 74;
 }
 
 .dark {
   color-scheme: dark;
-  --canvas: 9 14 26;
-  --surface: 15 23 42;
-  --border: 51 65 85;
-  --text: 226 232 240;
-  --muted: 148 163 184;
-  --accent: 56 189 248;
-  --accent-soft: 8 47 73;
-  --success: 74 222 128;
+  --canvas: 10 19 35;
+  --surface: 16 29 50;
+  --border: 55 74 104;
+  --text: 236 241 255;
+  --muted: 153 170 199;
+  --accent: 255 125 92;
+  --accent-soft: 67 39 47;
+  --success: 45 212 191;
   --warning: 251 191 36;
   --danger: 248 113 113;
 }
@@ -38,8 +38,11 @@ html {
 body {
   @apply bg-canvas text-text font-sans antialiased;
   background-image:
-    radial-gradient(circle at top left, rgba(14, 165, 233, 0.12), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.1), transparent 22%);
+    radial-gradient(circle at top left, rgba(255, 149, 112, 0.22), transparent 25%),
+    radial-gradient(circle at 85% 15%, rgba(52, 211, 153, 0.16), transparent 22%),
+    radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0));
+  min-height: 100vh;
 }
 
 #root {
@@ -48,7 +51,20 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+  scrollbar-color: rgba(130, 148, 179, 0.45) transparent;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+button:hover:not(:disabled),
+a:hover {
+  transform: translateY(-1px);
 }
 
 button:focus-visible,
@@ -59,12 +75,41 @@ textarea:focus-visible {
   @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-canvas;
 }
 
+@layer base {
+  ::selection {
+    background: rgba(238, 93, 80, 0.22);
+    color: rgb(var(--text));
+  }
+}
+
 @layer components {
   .panel {
-    @apply rounded-panel border border-border/70 bg-surface/90 shadow-card backdrop-blur;
+    @apply rounded-panel border border-border/70 bg-surface shadow-card backdrop-blur-xl;
   }
 
-  .subtle-ring {
-    @apply border border-white/20 dark:border-white/10;
+  .panel-strong {
+    @apply rounded-panel border border-white/10 text-white shadow-shell backdrop-blur-2xl;
+    background-color: rgba(10, 19, 35, 0.86);
   }
+
+  .gradient-stroke {
+    background: linear-gradient(135deg, rgba(238,93,80,0.55), rgba(14,165,140,0.35), rgba(59,130,246,0.28));
+  }
+
+  .hero-chip {
+    @apply inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-white/90 backdrop-blur;
+  }
+
+  .metric-tile {
+    @apply rounded-[1.4rem] border border-white/35 p-4 shadow-card backdrop-blur dark:border-white/10;
+    background-color: rgba(255, 255, 255, 0.75);
+  }
+}
+
+.dark .panel-strong {
+  background-color: rgba(7, 14, 28, 0.74);
+}
+
+.dark .metric-tile {
+  background-color: rgba(255, 255, 255, 0.05);
 }
