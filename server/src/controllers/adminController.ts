@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { prisma } from '../config/prisma.js';
 import { employeeSelect, getAdminDashboardMetrics } from '../services/analyticsService.js';
+import { createQrToken, getDateKeyInTimezone } from '../utils/date.js';
 import { generateEmployeeCsv } from '../utils/csv.js';
 import { generateEmployeePdf } from '../utils/pdf.js';
 
@@ -27,6 +28,10 @@ const employeeSchema = z.object({
 
 const permissionSchema = z.object({
   permissions: z.array(z.string()).min(1)
+});
+
+const qrToggleSchema = z.object({
+  isActive: z.boolean()
 });
 
 function buildEmployeeWhere(req: Request) {
@@ -54,6 +59,69 @@ function buildEmployeeWhere(req: Request) {
 export async function getDashboard(req: Request, res: Response) {
   const metrics = await getAdminDashboardMetrics();
   return res.json(metrics);
+}
+
+export async function getDailyQrCode(_req: Request, res: Response) {
+  const dateKey = getDateKeyInTimezone();
+  const qrCode = await prisma.dailyQrCode.findUnique({
+    where: { dateKey },
+    include: {
+      qrLogs: {
+        include: {
+          employee: {
+            select: {
+              fullName: true,
+              employeeCode: true
+            }
+          }
+        },
+        orderBy: { scannedAt: 'desc' }
+      }
+    }
+  });
+
+  return res.json({
+    dateKey,
+    qrCode,
+    stats: {
+      scanCount: qrCode?.qrLogs.length || 0
+    }
+  });
+}
+
+export async function regenerateDailyQrCode(_req: Request, res: Response) {
+  const dateKey = getDateKeyInTimezone();
+  const qrCode = await prisma.dailyQrCode.upsert({
+    where: { dateKey },
+    update: {
+      token: createQrToken(),
+      isActive: true
+    },
+    create: {
+      dateKey,
+      token: createQrToken(),
+      isActive: true
+    }
+  });
+
+  return res.status(StatusCodes.CREATED).json(qrCode);
+}
+
+export async function updateDailyQrCodeStatus(req: Request, res: Response) {
+  const dateKey = getDateKeyInTimezone();
+  const input = qrToggleSchema.parse(req.body);
+
+  const existing = await prisma.dailyQrCode.findUnique({ where: { dateKey } });
+  if (!existing) {
+    return res.status(StatusCodes.NOT_FOUND).json({ message: 'Daily QR code has not been generated yet.' });
+  }
+
+  const qrCode = await prisma.dailyQrCode.update({
+    where: { dateKey },
+    data: { isActive: input.isActive }
+  });
+
+  return res.json(qrCode);
 }
 
 export async function listEmployees(req: Request, res: Response) {

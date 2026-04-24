@@ -93,3 +93,29 @@ export type PaginatedEmployees = {
     totalPages: number;
   };
 };
+
+export type DailyQrCode = {
+  id: string;
+  dateKey: string;
+  token: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  qrLogs: Array<{
+    id: string;
+    scannedAt: string;
+    source?: string | null;
+    employee: {
+      fullName: string;
+      employeeCode: string;
+    };
+  }>;
+};
+
+export type DailyQrCodeResponse = {
+  dateKey: string;
+  qrCode: DailyQrCode | null;
+  stats: {
+    scanCount: number;
+  };
+};

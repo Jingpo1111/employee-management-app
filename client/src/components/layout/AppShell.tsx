@@ -1,4 +1,4 @@
-import { Bell, BriefcaseBusiness, ChartColumn, LayoutDashboard, LogOut, Menu, Search, Settings2, Sparkles, UserCircle2, Users, X } from 'lucide-react';
+import { Bell, BriefcaseBusiness, ChartColumn, LayoutDashboard, LogOut, Menu, QrCode, Search, Settings2, Sparkles, UserCircle2, Users, X } from 'lucide-react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +15,7 @@ type NavItem = {
 const adminItems: NavItem[] = [
   { to: '/admin/overview', label: 'Overview', icon: LayoutDashboard, caption: 'Pulse and priorities' },
   { to: '/admin/employees', label: 'Employees', icon: Users, caption: 'Directory and actions' },
+  { to: '/admin/qr-access', label: 'QR Access', icon: QrCode, caption: 'Daily scan control' },
   { to: '/admin/analytics', label: 'Analytics', icon: ChartColumn, caption: 'Signals and trends' }
 ];
 
@@ -28,6 +29,7 @@ const pageLabels: Record<string, string> = {
   overview: 'Overview',
   employees: 'Employees',
   analytics: 'Analytics',
+  'qr-access': 'QR Access',
   profile: 'Profile',
   workspace: 'Workspace'
 };

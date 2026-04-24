@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BriefcaseBusiness, LockKeyhole, Mail, MonitorSmartphone, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -10,6 +10,7 @@ import { Input } from '../components/ui/Input';
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('admin@acmehr.com');
   const [password, setPassword] = useState('Admin@123');
   const [error, setError] = useState('');
@@ -22,7 +23,7 @@ export function LoginPage() {
 
     try {
       await login({ email, password });
-      navigate('/');
+      navigate(searchParams.get('redirect') || '/');
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Login failed.');
     } finally {

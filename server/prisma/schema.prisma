@@ -57,6 +57,7 @@ model Employee {
   attendanceRecords AttendanceRecord[]
   tasks             Task[]
   notifications     Notification[]
+  qrScans           QrAttendanceLog[]
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 }
@@ -95,4 +96,26 @@ model Notification {
   read        Boolean   @default(false)
   createdAt   DateTime  @default(now())
   employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model DailyQrCode {
+  id          String            @id @default(cuid())
+  dateKey     String            @unique
+  token       String            @unique
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  qrLogs      QrAttendanceLog[]
+}
+
+model QrAttendanceLog {
+  id            String      @id @default(cuid())
+  dailyQrCodeId String
+  employeeId    String
+  scannedAt     DateTime    @default(now())
+  source        String?
+  dailyQrCode   DailyQrCode @relation(fields: [dailyQrCodeId], references: [id], onDelete: Cascade)
+  employee      Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([dailyQrCodeId, employeeId])
 }
