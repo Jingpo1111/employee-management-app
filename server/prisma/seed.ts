@@ -1,7 +1,11 @@
 import bcrypt from 'bcryptjs';
 import { PrismaClient, AttendanceStatus, TaskStatus } from '@prisma/client';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const prisma = new PrismaClient();
+const legacyAdminEmail = 'admin@acmehr.com';
 
 type EmployeeSeed = {
   employeeCode: string;
@@ -208,29 +212,45 @@ async function upsertEmployee(seed: EmployeeSeed, passwordHash: string) {
 }
 
 async function main() {
-  const adminPasswordHash = await bcrypt.hash('Admin@123', 10);
+  const adminEmail = process.env.ADMIN_EMAIL || 'phaijingpo016441653@gmail.com';
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    throw new Error('ADMIN_PASSWORD is required to seed the admin account.');
+  }
+
+  const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
   const employeePasswordHash = await bcrypt.hash('Employee@123', 10);
 
-  await prisma.user.upsert({
-    where: { email: 'admin@acmehr.com' },
-    update: {
-      passwordHash: adminPasswordHash,
-      role: 'ADMIN'
-    },
-    create: {
-      email: 'admin@acmehr.com',
-      passwordHash: adminPasswordHash,
-      role: 'ADMIN'
-    }
-  });
+  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  const legacyAdmin = adminEmail === legacyAdminEmail ? null : await prisma.user.findUnique({ where: { email: legacyAdminEmail } });
+
+  if (existingAdmin) {
+    await prisma.user.update({
+      where: { id: existingAdmin.id },
+      data: { passwordHash: adminPasswordHash, role: 'ADMIN' }
+    });
+  } else if (legacyAdmin) {
+    await prisma.user.update({
+      where: { id: legacyAdmin.id },
+      data: { email: adminEmail, passwordHash: adminPasswordHash, role: 'ADMIN' }
+    });
+  } else {
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        passwordHash: adminPasswordHash,
+        role: 'ADMIN'
+      }
+    });
+  }
 
   for (const employee of employeeSeeds) {
     await upsertEmployee(employee, employeePasswordHash);
   }
 
   console.log('Seed complete.');
-  console.log('Admin login: admin@acmehr.com / Admin@123');
-  console.log('Employee login: sokha.chan@acmehr.com / Employee@123');
+  console.log(`Admin login email: ${adminEmail}`);
+  console.log('Employee login email: sokha.chan@acmehr.com');
 }
 
 main()

@@ -11,8 +11,8 @@ export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('admin@acmehr.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -75,36 +75,27 @@ export function LoginPage() {
                 </div>
               </div>
 
-              <p className="mt-3 text-sm text-muted">Demo credentials are pre-filled. Use admin for management flows and employee for self-service flows.</p>
+              <p className="mt-3 text-sm text-muted">Enter the email and password assigned by your administrator. Passwords are never displayed on this page.</p>
 
               <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
                 <Field label="Email">
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                    <Input className="pl-11" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                    <Input className="pl-11" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
                   </div>
                 </Field>
                 <Field label="Password">
                   <div className="relative">
                     <LockKeyhole className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                    <Input className="pl-11" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+                    <Input className="pl-11" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
                   </div>
                 </Field>
                 {error ? <p className="rounded-2xl border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">{error}</p> : null}
                 <Button type="submit" className="w-full">{loading ? 'Signing in...' : 'Sign in'}</Button>
               </form>
 
-              <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border/70 bg-white/65 p-4 dark:bg-white/5">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted">Admin</p>
-                  <p className="mt-2 text-sm font-semibold text-text">admin@acmehr.com</p>
-                  <p className="text-sm text-muted">Admin@123</p>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-white/65 p-4 dark:bg-white/5">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted">Employee</p>
-                  <p className="mt-2 text-sm font-semibold text-text">sokha.chan@acmehr.com</p>
-                  <p className="text-sm text-muted">Employee@123</p>
-                </div>
+              <div className="mt-7 rounded-2xl border border-border/70 bg-white/65 p-4 text-sm text-muted dark:bg-white/5">
+                Admin can create employee accounts from the dashboard and assign private login passwords during employee setup.
               </div>
             </div>
           </div>

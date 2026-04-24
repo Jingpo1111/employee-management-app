@@ -23,7 +23,7 @@ const employeeSchema = z.object({
   managerName: z.string().optional().or(z.literal('')),
   permissions: z.array(z.string()).min(1),
   startDate: z.string(),
-  password: z.string().min(8).optional()
+  password: z.string().min(8)
 });
 
 const permissionSchema = z.object({
@@ -176,7 +176,7 @@ export async function getEmployeeById(req: Request, res: Response) {
 
 export async function createEmployee(req: Request, res: Response) {
   const input = employeeSchema.parse(req.body);
-  const passwordHash = await bcrypt.hash(input.password || 'Employee@123', 10);
+  const passwordHash = await bcrypt.hash(input.password, 10);
 
   const latest = await prisma.employee.findFirst({ orderBy: { createdAt: 'desc' } });
   const nextNumber = latest ? Number(latest.employeeCode.split('-')[1]) + 1 : 1;
