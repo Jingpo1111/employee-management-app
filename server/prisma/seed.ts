@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { PrismaClient, AttendanceStatus, TaskStatus } from '@prisma/client';
+import { randomBytes } from 'crypto';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -213,32 +214,45 @@ async function upsertEmployee(seed: EmployeeSeed, passwordHash: string) {
 
 async function main() {
   const adminEmail = process.env.ADMIN_EMAIL || 'phaijingpo016441653@gmail.com';
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword) {
-    throw new Error('ADMIN_PASSWORD is required to seed the admin account.');
-  }
-
-  const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
+  const configuredAdminPassword = process.env.ADMIN_PASSWORD;
   const employeePasswordHash = await bcrypt.hash('Employee@123', 10);
 
   const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
   const legacyAdmin = adminEmail === legacyAdminEmail ? null : await prisma.user.findUnique({ where: { email: legacyAdminEmail } });
+  const shouldSetAdminPassword = Boolean(configuredAdminPassword) || (!existingAdmin && !legacyAdmin);
+  const generatedAdminPassword = shouldSetAdminPassword && !configuredAdminPassword ? randomBytes(18).toString('base64url') : null;
+  const adminPasswordHash = shouldSetAdminPassword ? await bcrypt.hash(configuredAdminPassword || generatedAdminPassword!, 10) : null;
+
+  if (!configuredAdminPassword) {
+    console.warn('ADMIN_PASSWORD is not set. Existing admin password will be preserved if possible.');
+    if (generatedAdminPassword) {
+      console.warn(`Temporary admin password for this new database: ${generatedAdminPassword}`);
+      console.warn('Set ADMIN_PASSWORD in Render and redeploy to replace this temporary password.');
+    }
+  }
 
   if (existingAdmin) {
     await prisma.user.update({
       where: { id: existingAdmin.id },
-      data: { passwordHash: adminPasswordHash, role: 'ADMIN' }
+      data: {
+        role: 'ADMIN',
+        ...(adminPasswordHash ? { passwordHash: adminPasswordHash } : {})
+      }
     });
   } else if (legacyAdmin) {
     await prisma.user.update({
       where: { id: legacyAdmin.id },
-      data: { email: adminEmail, passwordHash: adminPasswordHash, role: 'ADMIN' }
+      data: {
+        email: adminEmail,
+        role: 'ADMIN',
+        ...(adminPasswordHash ? { passwordHash: adminPasswordHash } : {})
+      }
     });
   } else {
     await prisma.user.create({
       data: {
         email: adminEmail,
-        passwordHash: adminPasswordHash,
+        passwordHash: adminPasswordHash!,
         role: 'ADMIN'
       }
     });
