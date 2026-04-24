@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { prisma } from '../config/prisma.js';
 import { getEmployeeDashboard } from '../services/analyticsService.js';
+import { sendTelegramAttendanceMessage } from '../services/telegramService.js';
 import { dateKeyToDate, getCheckInTimeLabel, getDateKeyInTimezone } from '../utils/date.js';
 
 const profileSchema = z.object({
@@ -144,6 +145,7 @@ export async function claimQrAttendance(req: Request, res: Response) {
   }
 
   const attendanceDate = dateKeyToDate(dateKey);
+  const checkInTime = getCheckInTimeLabel();
   const existingLog = await prisma.qrAttendanceLog.findUnique({
     where: {
       dailyQrCodeId_employeeId: {
@@ -162,13 +164,13 @@ export async function claimQrAttendance(req: Request, res: Response) {
     },
     update: {
       status: 'PRESENT',
-      checkIn: existingLog ? undefined : getCheckInTimeLabel()
+      checkIn: existingLog ? undefined : checkInTime
     },
     create: {
       employeeId: employee.id,
       date: attendanceDate,
       status: 'PRESENT',
-      checkIn: getCheckInTimeLabel()
+      checkIn: checkInTime
     }
   });
 
@@ -179,6 +181,15 @@ export async function claimQrAttendance(req: Request, res: Response) {
         employeeId: employee.id,
         source: 'telegram-scan'
       }
+    });
+
+    sendTelegramAttendanceMessage({
+      employeeName: employee.fullName,
+      employeeCode: employee.employeeCode,
+      dateKey,
+      checkIn: attendance.checkIn
+    }).catch((error) => {
+      console.error(error);
     });
   }
 

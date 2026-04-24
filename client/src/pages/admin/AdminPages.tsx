@@ -21,6 +21,7 @@ import { Textarea } from '../../components/ui/Textarea';
 const defaultForm = {
   fullName: '',
   email: '',
+  password: '',
   title: '',
   department: '',
   team: '',
@@ -54,11 +55,13 @@ function SectionHero({ eyebrow, title, description, actions }: { eyebrow: string
 function EmployeeForm({
   initialValue,
   onSubmit,
-  submitting
+  submitting,
+  mode = 'create'
 }: {
   initialValue?: Partial<typeof defaultForm>;
   onSubmit: (payload: typeof defaultForm) => void;
   submitting?: boolean;
+  mode?: 'create' | 'edit';
 }) {
   const [form, setForm] = useState({ ...defaultForm, ...initialValue, permissions: initialValue?.permissions || defaultForm.permissions });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,6 +80,10 @@ function EmployeeForm({
       }
     });
 
+    if (mode === 'create' && form.password.trim().length < 8) {
+      nextErrors.password = 'Use at least 8 characters.';
+    }
+
     if (form.performanceScore < 0 || form.performanceScore > 100) {
       nextErrors.performanceScore = 'Score must be between 0 and 100.';
     }
@@ -93,6 +100,17 @@ function EmployeeForm({
     <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
       <Field label="Full name" error={errors.fullName}><Input value={form.fullName} onChange={(event) => update('fullName', event.target.value)} /></Field>
       <Field label="Email" error={errors.email}><Input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} /></Field>
+      {mode === 'create' ? (
+        <Field label="Login password" error={errors.password} hint="Employee will use this with their email to sign in.">
+          <Input
+            type="password"
+            value={form.password}
+            onChange={(event) => update('password', event.target.value)}
+            autoComplete="new-password"
+            placeholder="Minimum 8 characters"
+          />
+        </Field>
+      ) : null}
       <Field label="Job title" error={errors.title}><Input value={form.title} onChange={(event) => update('title', event.target.value)} /></Field>
       <Field label="Department" error={errors.department}><Input value={form.department} onChange={(event) => update('department', event.target.value)} /></Field>
       <Field label="Team" error={errors.team}><Input value={form.team} onChange={(event) => update('team', event.target.value)} /></Field>
@@ -368,6 +386,7 @@ export function AdminEmployeesPage() {
             startDate: editingEmployee.startDate.slice(0, 10)
           } : undefined}
           submitting={createMutation.isPending || updateMutation.isPending}
+          mode={editingEmployee ? 'edit' : 'create'}
           onSubmit={(payload) => editingEmployee ? updateMutation.mutate(payload) : createMutation.mutate(payload)}
         />
       </Modal>

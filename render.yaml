@@ -15,6 +15,10 @@ services:
         fromDatabase:
           name: employee-management-db
           property: connectionString
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
 
 databases:
   - name: employee-management-db

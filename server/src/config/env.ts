@@ -16,5 +16,7 @@ export const env = {
     .map((value) => value.trim())
     .filter(Boolean),
   databaseUrl: process.env.DATABASE_URL as string,
-  jwtSecret: process.env.JWT_SECRET as string
+  jwtSecret: process.env.JWT_SECRET as string,
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
+  telegramChatId: process.env.TELEGRAM_CHAT_ID
 };
