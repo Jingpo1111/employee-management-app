@@ -6,6 +6,7 @@ import {
   getDateKeyInTimezone,
   getMonthStartDateKey,
   getPreviousDateKey,
+  isWorkdayFinished,
   isWeekdayDateKey
 } from '../utils/date.js';
 
@@ -18,12 +19,13 @@ function getPolicyWindow(startDate: Date) {
   const monthStartKey = getMonthStartDateKey(todayKey);
   const startKey = dateToDateKey(startDate) > monthStartKey ? dateToDateKey(startDate) : monthStartKey;
   const yesterdayKey = getPreviousDateKey(todayKey);
+  const missedEndKey = isWorkdayFinished() ? todayKey : yesterdayKey;
 
   return {
     todayKey,
     monthStartKey,
     startKey,
-    yesterdayKey
+    missedEndKey
   };
 }
 
@@ -53,8 +55,8 @@ export async function reconcileEmployeePerformance(employeeId: string) {
     return null;
   }
 
-  const { todayKey, monthStartKey, startKey, yesterdayKey } = getPolicyWindow(employee.startDate);
-  const canCreateMissedDays = startKey <= yesterdayKey;
+  const { todayKey, monthStartKey, startKey, missedEndKey } = getPolicyWindow(employee.startDate);
+  const canCreateMissedDays = startKey <= missedEndKey;
   const existingRecords = await prisma.attendanceRecord.findMany({
     where: {
       employeeId,
@@ -71,7 +73,7 @@ export async function reconcileEmployeePerformance(employeeId: string) {
 
   const existingDateKeys = new Set(existingRecords.map((record) => dateToDateKey(record.date)));
   const missedDateKeys = canCreateMissedDays
-    ? eachDateKey(startKey, yesterdayKey).filter((dateKey) => isWeekdayDateKey(dateKey) && !existingDateKeys.has(dateKey))
+    ? eachDateKey(startKey, missedEndKey).filter((dateKey) => isWeekdayDateKey(dateKey) && !existingDateKeys.has(dateKey))
     : [];
 
   if (missedDateKeys.length) {
