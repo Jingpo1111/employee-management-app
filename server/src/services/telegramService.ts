@@ -5,6 +5,8 @@ type AttendanceMessageInput = {
   employeeCode: string;
   dateKey: string;
   checkIn: string | null;
+  attendanceStatus: string;
+  performanceScore: number | null;
   alreadyClaimed?: boolean;
 };
 
@@ -58,6 +60,8 @@ export async function sendTelegramAttendanceMessage(input: AttendanceMessageInpu
     `Code: ${escapeHtml(input.employeeCode)}`,
     `Date: ${escapeHtml(input.dateKey)}`,
     `Time: ${escapeHtml(input.checkIn || 'Recorded')}`,
+    `Attendance: ${escapeHtml(input.attendanceStatus)}`,
+    `Performance: ${input.performanceScore ?? 'N/A'}%`,
     `Status: ${input.alreadyClaimed ? 'Already checked in today' : 'Attendance recorded'}`
   ].join('\n');
 

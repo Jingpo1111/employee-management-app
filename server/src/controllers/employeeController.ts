@@ -199,6 +199,8 @@ export async function claimQrAttendance(req: Request, res: Response) {
       employeeCode: employee.employeeCode,
       dateKey,
       checkIn: attendance.checkIn,
+      attendanceStatus: attendance.status,
+      performanceScore,
       alreadyClaimed: Boolean(existingLog)
     });
   } catch (error) {
