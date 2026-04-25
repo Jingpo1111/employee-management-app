@@ -32,7 +32,13 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok' });
+  res.json({
+    status: 'ok',
+    telegram: {
+      botTokenConfigured: Boolean(env.telegramBotToken),
+      chatIdConfigured: Boolean(env.telegramChatId)
+    }
+  });
 });
 
 app.use('/api/auth', authRoutes);

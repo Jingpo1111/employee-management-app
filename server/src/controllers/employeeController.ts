@@ -174,7 +174,7 @@ export async function claimQrAttendance(req: Request, res: Response) {
     }
   });
 
-  let telegramNotification: { sent: boolean; reason?: string } = { sent: false, reason: 'Attendance was already claimed for today.' };
+  let telegramNotification: { sent: boolean; reason?: string } = { sent: false };
 
   if (!existingLog) {
     await prisma.qrAttendanceLog.create({
@@ -184,21 +184,22 @@ export async function claimQrAttendance(req: Request, res: Response) {
         source: 'telegram-scan'
       }
     });
+  }
 
-    try {
-      telegramNotification = await sendTelegramAttendanceMessage({
-        employeeName: employee.fullName,
-        employeeCode: employee.employeeCode,
-        dateKey,
-        checkIn: attendance.checkIn
-      });
-    } catch (error) {
-      console.error(error);
-      telegramNotification = {
-        sent: false,
-        reason: error instanceof Error ? error.message : 'Telegram notification failed.'
-      };
-    }
+  try {
+    telegramNotification = await sendTelegramAttendanceMessage({
+      employeeName: employee.fullName,
+      employeeCode: employee.employeeCode,
+      dateKey,
+      checkIn: attendance.checkIn,
+      alreadyClaimed: Boolean(existingLog)
+    });
+  } catch (error) {
+    console.error(error);
+    telegramNotification = {
+      sent: false,
+      reason: error instanceof Error ? error.message : 'Telegram notification failed.'
+    };
   }
 
   return res.json({

@@ -5,6 +5,7 @@ type AttendanceMessageInput = {
   employeeCode: string;
   dateKey: string;
   checkIn: string | null;
+  alreadyClaimed?: boolean;
 };
 
 type TelegramSendResult = {
@@ -52,11 +53,12 @@ export async function sendTelegramAttendanceMessage(input: AttendanceMessageInpu
   }
 
   const text = [
-    '<b>Employee QR check-in success</b>',
+    input.alreadyClaimed ? '<b>Employee QR scan repeated</b>' : '<b>Employee QR check-in success</b>',
     `Name: ${escapeHtml(input.employeeName)}`,
     `Code: ${escapeHtml(input.employeeCode)}`,
     `Date: ${escapeHtml(input.dateKey)}`,
-    `Time: ${escapeHtml(input.checkIn || 'Recorded')}`
+    `Time: ${escapeHtml(input.checkIn || 'Recorded')}`,
+    `Status: ${input.alreadyClaimed ? 'Already checked in today' : 'Attendance recorded'}`
   ].join('\n');
 
   const chatId = await resolveTelegramChatId(env.telegramBotToken);
