@@ -5,7 +5,7 @@ import { prisma } from '../config/prisma.js';
 import { getEmployeeDashboard } from '../services/analyticsService.js';
 import { reconcileEmployeePerformance, reconcileEmployeePerformanceForUser } from '../services/attendancePolicyService.js';
 import { sendTelegramAttendanceMessage } from '../services/telegramService.js';
-import { dateKeyToDate, getCheckInTimeLabel, getDateKeyInTimezone, isLateCheckIn } from '../utils/date.js';
+import { dateKeyToDate, getCheckInTimeLabel, getDateKeyInTimezone, getQrAttendanceStatus } from '../utils/date.js';
 
 const profileSchema = z.object({
   fullName: z.string().min(2),
@@ -150,7 +150,7 @@ export async function claimQrAttendance(req: Request, res: Response) {
 
   const attendanceDate = dateKeyToDate(dateKey);
   const checkInTime = getCheckInTimeLabel();
-  const attendanceStatus = isLateCheckIn(checkInTime) ? 'LATE' : 'PRESENT';
+  const attendanceStatus = getQrAttendanceStatus(checkInTime);
   const existingLog = await prisma.qrAttendanceLog.findUnique({
     where: {
       dailyQrCodeId_employeeId: {

@@ -21,6 +21,10 @@ function escapeHtml(value: string) {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function formatAttendanceStatus(status: string) {
+  return status === 'LATE' ? 'Late' : status === 'PRESENT' ? 'Present' : status;
+}
+
 async function resolveTelegramChatId(botToken: string) {
   if (env.telegramChatId) {
     return env.telegramChatId;
@@ -60,7 +64,7 @@ export async function sendTelegramAttendanceMessage(input: AttendanceMessageInpu
     `Code: ${escapeHtml(input.employeeCode)}`,
     `Date: ${escapeHtml(input.dateKey)}`,
     `Time: ${escapeHtml(input.checkIn || 'Recorded')}`,
-    `Attendance: ${escapeHtml(input.attendanceStatus)}`,
+    `Attendance: ${escapeHtml(formatAttendanceStatus(input.attendanceStatus))}`,
     `Performance: ${input.performanceScore ?? 'N/A'}%`,
     `Status: ${input.alreadyClaimed ? 'Already checked in today' : 'Attendance recorded'}`
   ].join('\n');

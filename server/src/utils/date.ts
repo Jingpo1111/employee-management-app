@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 
 const APP_TIMEZONE = 'Asia/Phnom_Penh';
+const WORK_START_TIME = '08:00';
 
 export function getDateKeyInTimezone(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -21,7 +22,11 @@ export function getCheckInTimeLabel(date = new Date()) {
 }
 
 export function isLateCheckIn(timeLabel: string) {
-  return timeLabel > '08:00';
+  return timeLabel > WORK_START_TIME;
+}
+
+export function getQrAttendanceStatus(timeLabel: string) {
+  return isLateCheckIn(timeLabel) ? 'LATE' : 'PRESENT';
 }
 
 export function dateKeyToDate(dateKey: string) {
