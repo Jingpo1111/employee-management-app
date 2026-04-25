@@ -1,4 +1,3 @@
-import { AttendanceStatus } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import {
   dateKeyToDate,
@@ -12,6 +11,7 @@ import {
 
 const ABSENT_PENALTY = 1;
 const LATE_PENALTY = 0.5;
+type AttendanceStatusValue = 'PRESENT' | 'LATE' | 'REMOTE' | 'LEAVE' | 'ABSENT';
 
 function getPolicyWindow(startDate: Date) {
   const todayKey = getDateKeyInTimezone();
@@ -27,7 +27,7 @@ function getPolicyWindow(startDate: Date) {
   };
 }
 
-function calculateMonthlyScore(records: Array<{ status: AttendanceStatus }>) {
+function calculateMonthlyScore(records: Array<{ status: AttendanceStatusValue }>) {
   const penalty = records.reduce((total, record) => {
     if (record.status === 'ABSENT') {
       return total + ABSENT_PENALTY;
@@ -79,7 +79,7 @@ export async function reconcileEmployeePerformance(employeeId: string) {
       data: missedDateKeys.map((dateKey) => ({
         employeeId,
         date: dateKeyToDate(dateKey),
-        status: 'ABSENT' as AttendanceStatus,
+        status: 'ABSENT',
         note: 'Auto-marked absent: no QR check-in recorded.'
       })),
       skipDuplicates: true
@@ -98,7 +98,7 @@ export async function reconcileEmployeePerformance(employeeId: string) {
         select: { status: true }
       })
     : existingRecords;
-  const performanceScore = calculateMonthlyScore(monthlyRecords);
+  const performanceScore = calculateMonthlyScore(monthlyRecords as Array<{ status: AttendanceStatusValue }>);
 
   await prisma.employee.update({
     where: { id: employeeId },
