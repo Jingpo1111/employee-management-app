@@ -30,7 +30,7 @@ const defaultForm = {
   status: 'Active',
   bio: '',
   avatar: '',
-  performanceScore: 85,
+  performanceScore: 100,
   managerName: '',
   permissions: ['profile:view', 'profile:edit', 'tasks:view', 'attendance:view'],
   startDate: new Date().toISOString().slice(0, 10)
@@ -119,7 +119,9 @@ function EmployeeForm({
       <Field label="Manager"><Input value={form.managerName} onChange={(event) => update('managerName', event.target.value)} /></Field>
       <Field label="Status"><Input value={form.status} onChange={(event) => update('status', event.target.value)} /></Field>
       <Field label="Start date"><Input type="date" value={form.startDate} onChange={(event) => update('startDate', event.target.value)} /></Field>
-      <Field label="Performance score" error={errors.performanceScore}><Input type="number" min={0} max={100} value={form.performanceScore} onChange={(event) => update('performanceScore', Number(event.target.value))} /></Field>
+      {mode === 'edit' ? (
+        <Field label="Performance score" error={errors.performanceScore}><Input type="number" min={0} max={100} step={0.5} value={form.performanceScore} onChange={(event) => update('performanceScore', Number(event.target.value))} /></Field>
+      ) : null}
       <Field label="Avatar URL"><Input value={form.avatar} onChange={(event) => update('avatar', event.target.value)} placeholder="https://..." /></Field>
       <div className="md:col-span-2">
         <Field label="Permissions" hint="Comma separated">

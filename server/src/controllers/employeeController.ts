@@ -3,8 +3,9 @@ import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { prisma } from '../config/prisma.js';
 import { getEmployeeDashboard } from '../services/analyticsService.js';
+import { reconcileEmployeePerformance, reconcileEmployeePerformanceForUser } from '../services/attendancePolicyService.js';
 import { sendTelegramAttendanceMessage } from '../services/telegramService.js';
-import { dateKeyToDate, getCheckInTimeLabel, getDateKeyInTimezone } from '../utils/date.js';
+import { dateKeyToDate, getCheckInTimeLabel, getDateKeyInTimezone, isLateCheckIn } from '../utils/date.js';
 
 const profileSchema = z.object({
   fullName: z.string().min(2),
@@ -21,6 +22,7 @@ export async function getDashboard(req: Request, res: Response) {
     return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Authentication required.' });
   }
 
+  await reconcileEmployeePerformanceForUser(auth.userId);
   const data = await getEmployeeDashboard(auth.userId);
   if (!data) {
     return res.status(StatusCodes.NOT_FOUND).json({ message: 'Employee profile not found.' });
@@ -31,6 +33,7 @@ export async function getDashboard(req: Request, res: Response) {
 
 export async function getProfile(req: Request, res: Response) {
   const auth = req.auth!;
+  await reconcileEmployeePerformanceForUser(auth.userId);
   const employee = await prisma.employee.findUnique({ where: { userId: auth.userId }, include: { user: { select: { email: true } } } });
 
   if (!employee) {
@@ -62,6 +65,7 @@ export async function updateProfile(req: Request, res: Response) {
 
 export async function getAttendance(req: Request, res: Response) {
   const auth = req.auth!;
+  await reconcileEmployeePerformanceForUser(auth.userId);
   const attendance = await prisma.attendanceRecord.findMany({
     where: { employee: { userId: auth.userId } },
     orderBy: { date: 'desc' }
@@ -146,6 +150,7 @@ export async function claimQrAttendance(req: Request, res: Response) {
 
   const attendanceDate = dateKeyToDate(dateKey);
   const checkInTime = getCheckInTimeLabel();
+  const attendanceStatus = isLateCheckIn(checkInTime) ? 'LATE' : 'PRESENT';
   const existingLog = await prisma.qrAttendanceLog.findUnique({
     where: {
       dailyQrCodeId_employeeId: {
@@ -163,13 +168,13 @@ export async function claimQrAttendance(req: Request, res: Response) {
       }
     },
     update: {
-      status: 'PRESENT',
+      status: existingLog ? undefined : attendanceStatus,
       checkIn: existingLog ? undefined : checkInTime
     },
     create: {
       employeeId: employee.id,
       date: attendanceDate,
-      status: 'PRESENT',
+      status: attendanceStatus,
       checkIn: checkInTime
     }
   });
@@ -185,6 +190,8 @@ export async function claimQrAttendance(req: Request, res: Response) {
       }
     });
   }
+
+  const performanceScore = await reconcileEmployeePerformance(employee.id);
 
   try {
     telegramNotification = await sendTelegramAttendanceMessage({
@@ -206,6 +213,7 @@ export async function claimQrAttendance(req: Request, res: Response) {
     message: existingLog ? 'You were already checked in for today.' : 'Attendance recorded successfully.',
     attendance,
     alreadyClaimed: Boolean(existingLog),
+    performanceScore,
     telegramNotification
   });
 }

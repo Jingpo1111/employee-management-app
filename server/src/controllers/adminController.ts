@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { prisma } from '../config/prisma.js';
 import { employeeSelect, getAdminDashboardMetrics } from '../services/analyticsService.js';
+import { reconcileAllEmployeePerformance, reconcileEmployeePerformance } from '../services/attendancePolicyService.js';
 import { createQrToken, getDateKeyInTimezone } from '../utils/date.js';
 import { generateEmployeeCsv } from '../utils/csv.js';
 import { generateEmployeePdf } from '../utils/pdf.js';
@@ -57,6 +58,7 @@ function buildEmployeeWhere(req: Request) {
 }
 
 export async function getDashboard(req: Request, res: Response) {
+  await reconcileAllEmployeePerformance();
   const metrics = await getAdminDashboardMetrics();
   return res.json(metrics);
 }
@@ -125,6 +127,7 @@ export async function updateDailyQrCodeStatus(req: Request, res: Response) {
 }
 
 export async function listEmployees(req: Request, res: Response) {
+  await reconcileAllEmployeePerformance();
   const page = Number(req.query.page || 1);
   const pageSize = Number(req.query.pageSize || 8);
   const sortBy = ['fullName', 'department', 'performanceScore', 'startDate', 'status'].includes(String(req.query.sortBy))
@@ -157,6 +160,7 @@ export async function listEmployees(req: Request, res: Response) {
 
 export async function getEmployeeById(req: Request, res: Response) {
   const employeeId = String(req.params.id);
+  await reconcileEmployeePerformance(employeeId);
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
     include: {
@@ -194,7 +198,7 @@ export async function createEmployee(req: Request, res: Response) {
       status: input.status,
       bio: input.bio || null,
       avatar: input.avatar || null,
-      performanceScore: input.performanceScore,
+      performanceScore: 100,
       managerName: input.managerName || null,
       permissions: input.permissions,
       startDate: new Date(input.startDate),
@@ -204,15 +208,6 @@ export async function createEmployee(req: Request, res: Response) {
           passwordHash,
           role: 'EMPLOYEE'
         }
-      },
-      attendanceRecords: {
-        create: [
-          {
-            date: new Date(),
-            status: 'PRESENT',
-            checkIn: '09:00'
-          }
-        ]
       },
       notifications: {
         create: [

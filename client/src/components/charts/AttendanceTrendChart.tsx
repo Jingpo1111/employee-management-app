@@ -2,12 +2,12 @@ import { ResponsiveContainer, CartesianGrid, LineChart, Line, Tooltip, XAxis, YA
 import { Card } from '../ui/Card';
 
 export function AttendanceTrendChart({ data }: { data: Array<{ date: string; status: string; count: number }> }) {
-  const grouped = data.reduce<Record<string, { date: string; present: number; remote: number; leave: number; absent: number }>>((acc, item) => {
+  const grouped = data.reduce<Record<string, { date: string; present: number; late: number; remote: number; leave: number; absent: number }>>((acc, item) => {
     if (!acc[item.date]) {
-      acc[item.date] = { date: item.date, present: 0, remote: 0, leave: 0, absent: 0 };
+      acc[item.date] = { date: item.date, present: 0, late: 0, remote: 0, leave: 0, absent: 0 };
     }
 
-    const key = item.status.toLowerCase() as 'present' | 'remote' | 'leave' | 'absent';
+    const key = item.status.toLowerCase() as 'present' | 'late' | 'remote' | 'leave' | 'absent';
     acc[item.date][key] = item.count;
     return acc;
   }, {});
@@ -30,6 +30,7 @@ export function AttendanceTrendChart({ data }: { data: Array<{ date: string; sta
             <Tooltip contentStyle={{ borderRadius: '18px', border: '1px solid rgba(228,214,199,0.7)', background: 'rgba(255,255,255,0.92)' }} />
             <Legend />
             <Line type="monotone" dataKey="present" stroke="#14b8a6" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="late" stroke="#f97316" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
             <Line type="monotone" dataKey="remote" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
             <Line type="monotone" dataKey="leave" stroke="#f59e0b" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
             <Line type="monotone" dataKey="absent" stroke="#ef4444" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />

@@ -14,6 +14,7 @@ enum Role {
 
 enum AttendanceStatus {
   PRESENT
+  LATE
   REMOTE
   LEAVE
   ABSENT
@@ -50,7 +51,7 @@ model Employee {
   bio               String?
   avatar            String?
   startDate         DateTime
-  performanceScore  Int                  @default(0)
+  performanceScore  Float                @default(100)
   managerName       String?
   permissions       String[]
   user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)

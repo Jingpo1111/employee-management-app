@@ -35,7 +35,7 @@ export type AttendanceRecord = {
   date: string;
   checkIn?: string | null;
   checkOut?: string | null;
-  status: 'PRESENT' | 'REMOTE' | 'LEAVE' | 'ABSENT';
+  status: 'PRESENT' | 'LATE' | 'REMOTE' | 'LEAVE' | 'ABSENT';
   hoursWorked?: number | null;
   note?: string | null;
 };

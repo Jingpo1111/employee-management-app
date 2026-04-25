@@ -59,7 +59,7 @@ const employeeSeeds: EmployeeSeed[] = [
     bio: 'Owns the design system and cross-platform UX consistency.',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
     startDate: new Date('2023-06-12'),
-    performanceScore: 91,
+    performanceScore: 100,
     managerName: 'Dara Lim',
     permissions: ['profile:view', 'profile:edit', 'tasks:view', 'attendance:view'],
     attendance: [
@@ -90,7 +90,7 @@ const employeeSeeds: EmployeeSeed[] = [
     bio: 'Builds internal admin tooling and workflow automation.',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80',
     startDate: new Date('2022-09-02'),
-    performanceScore: 96,
+    performanceScore: 100,
     managerName: 'Dara Lim',
     permissions: ['profile:view', 'profile:edit', 'tasks:view', 'attendance:view'],
     attendance: [
@@ -120,7 +120,7 @@ const employeeSeeds: EmployeeSeed[] = [
     bio: 'Owns people operations workflows and onboarding readiness.',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
     startDate: new Date('2026-01-10'),
-    performanceScore: 84,
+    performanceScore: 100,
     managerName: 'Dara Lim',
     permissions: ['profile:view', 'profile:edit', 'tasks:view', 'attendance:view'],
     attendance: [
