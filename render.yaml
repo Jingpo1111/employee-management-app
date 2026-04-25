@@ -18,7 +18,7 @@ services:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHAT_ID
-        sync: false
+        value: "1671759342"
       - key: ADMIN_EMAIL
         value: phaijingpo016441653@gmail.com
       - key: ADMIN_PASSWORD

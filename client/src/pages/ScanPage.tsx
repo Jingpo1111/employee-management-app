@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckCircle2, QrCode, ShieldAlert } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -20,8 +21,18 @@ export function ScanPage() {
   });
 
   const claimMutation = useMutation({
-    mutationFn: () => apiFetch<{ message: string; alreadyClaimed: boolean }>(`/employee/scan/${token}/claim`, { method: 'POST' })
+    mutationFn: () => apiFetch<{ message: string; alreadyClaimed: boolean; telegramNotification?: { sent: boolean; reason?: string } }>(`/employee/scan/${token}/claim`, { method: 'POST' })
   });
+  const autoClaimStarted = useRef(false);
+
+  useEffect(() => {
+    if (!data?.valid || user?.role !== 'EMPLOYEE' || autoClaimStarted.current) {
+      return;
+    }
+
+    autoClaimStarted.current = true;
+    claimMutation.mutate();
+  }, [claimMutation, data?.valid, user?.role]);
 
   if (isLoading) {
     return <LoadingState label="Validating QR code..." />;
@@ -75,13 +86,19 @@ export function ScanPage() {
                     <div className="flex items-start gap-4">
                       <div className="rounded-[1rem] bg-accentSoft p-3 text-accent"><QrCode className="h-5 w-5" /></div>
                       <div>
-                        <p className="font-semibold">Ready to record attendance</p>
-                        <p className="mt-2 text-sm text-muted">Tap once to claim today's attendance. If you already claimed it earlier, the system will tell you and keep your record unchanged.</p>
+                        <p className="font-semibold">{claimMutation.isPending ? 'Recording attendance...' : 'Attendance scan received'}</p>
+                        <p className="mt-2 text-sm text-muted">Your attendance is recorded automatically after a valid scan. If you already claimed it earlier, the system keeps your existing record.</p>
                       </div>
                     </div>
                   </Card>
-                  <Button className="w-full" onClick={() => claimMutation.mutate()} disabled={claimMutation.isPending}>{claimMutation.isPending ? 'Recording attendance...' : 'Confirm attendance for today'}</Button>
-                  {claimMutation.data ? <Card className="bg-[linear-gradient(135deg,rgba(20,184,166,0.14),rgba(59,130,246,0.12))]"><p className="font-semibold">{claimMutation.data.message}</p></Card> : null}
+                  {claimMutation.data ? (
+                    <Card className="bg-[linear-gradient(135deg,rgba(20,184,166,0.14),rgba(59,130,246,0.12))]">
+                      <p className="font-semibold">{claimMutation.data.message}</p>
+                      {claimMutation.data.telegramNotification?.sent === false && !claimMutation.data.alreadyClaimed ? (
+                        <p className="mt-2 text-sm text-muted">Telegram alert was not sent: {claimMutation.data.telegramNotification.reason}</p>
+                      ) : null}
+                    </Card>
+                  ) : null}
                   {claimMutation.error instanceof Error ? <Card className="bg-danger/10"><p className="font-semibold text-danger">{claimMutation.error.message}</p></Card> : null}
                 </div>
               )}

@@ -7,14 +7,48 @@ type AttendanceMessageInput = {
   checkIn: string | null;
 };
 
+type TelegramSendResult = {
+  sent: boolean;
+  reason?: string;
+};
+
+let cachedChatId: string | undefined;
+
 function escapeHtml(value: string) {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-export async function sendTelegramAttendanceMessage(input: AttendanceMessageInput) {
-  if (!env.telegramBotToken || !env.telegramChatId) {
-    console.warn('Telegram notification skipped: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing.');
-    return;
+async function resolveTelegramChatId(botToken: string) {
+  if (env.telegramChatId) {
+    return env.telegramChatId;
+  }
+
+  if (cachedChatId) {
+    return cachedChatId;
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates`);
+  if (!response.ok) {
+    throw new Error(`Telegram getUpdates failed with status ${response.status}: ${await response.text()}`);
+  }
+
+  const payload = (await response.json()) as {
+    result?: Array<{ message?: { chat?: { id?: number | string } } }>;
+  };
+  const chatId = [...(payload.result || [])].reverse().find((update) => update.message?.chat?.id)?.message?.chat?.id;
+  if (!chatId) {
+    throw new Error('Telegram chat ID was not found. Send a message to the bot once, then scan again.');
+  }
+
+  cachedChatId = String(chatId);
+  return cachedChatId;
+}
+
+export async function sendTelegramAttendanceMessage(input: AttendanceMessageInput): Promise<TelegramSendResult> {
+  if (!env.telegramBotToken) {
+    const reason = 'TELEGRAM_BOT_TOKEN is missing.';
+    console.warn(`Telegram notification skipped: ${reason}`);
+    return { sent: false, reason };
   }
 
   const text = [
@@ -25,11 +59,12 @@ export async function sendTelegramAttendanceMessage(input: AttendanceMessageInpu
     `Time: ${escapeHtml(input.checkIn || 'Recorded')}`
   ].join('\n');
 
+  const chatId = await resolveTelegramChatId(env.telegramBotToken);
   const response = await fetch(`https://api.telegram.org/bot${env.telegramBotToken}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      chat_id: env.telegramChatId,
+      chat_id: chatId,
       parse_mode: 'HTML',
       text
     })
@@ -39,4 +74,6 @@ export async function sendTelegramAttendanceMessage(input: AttendanceMessageInpu
     const details = await response.text();
     throw new Error(`Telegram notification failed with status ${response.status}: ${details}`);
   }
+
+  return { sent: true };
 }
