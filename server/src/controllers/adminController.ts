@@ -6,7 +6,7 @@ import { prisma } from '../config/prisma.js';
 import { employeeSelect, getAdminDashboardMetrics } from '../services/analyticsService.js';
 import { reconcileAllEmployeePerformance, reconcileEmployeePerformance } from '../services/attendancePolicyService.js';
 import { createQrToken, dateKeyToDate, dateToDateKey, getDateKeyInTimezone } from '../utils/date.js';
-import { generateEmployeeCsv } from '../utils/csv.js';
+import { generateAttendanceSummaryCsv, generateEmployeeCsv } from '../utils/csv.js';
 import { generateEmployeePdf } from '../utils/pdf.js';
 
 const avatarSchema = z.string().refine((value) => {
@@ -329,6 +329,56 @@ export async function getDailyAttendance(req: Request, res: Response) {
   });
 }
 
+export async function exportAllDayAttendance(_req: Request, res: Response) {
+  await reconcileAllEmployeePerformance();
+
+  const records = await prisma.attendanceRecord.findMany({
+    select: {
+      date: true,
+      status: true
+    },
+    orderBy: {
+      date: 'asc'
+    }
+  });
+
+  const summaryByDate = new Map<string, { date: string; present: number; late: number; absent: number; total: number }>();
+
+  records.forEach((record) => {
+    const date = dateToDateKey(record.date);
+    const row = summaryByDate.get(date) || { date, present: 0, late: 0, absent: 0, total: 0 };
+
+    if (record.status === 'PRESENT') row.present += 1;
+    if (record.status === 'LATE') row.late += 1;
+    if (record.status === 'ABSENT') row.absent += 1;
+    row.total += 1;
+
+    summaryByDate.set(date, row);
+  });
+
+  const dailyRows = Array.from(summaryByDate.values());
+  const totals = dailyRows.reduce((acc, row) => ({
+    date: 'TOTAL',
+    present: acc.present + row.present,
+    late: acc.late + row.late,
+    absent: acc.absent + row.absent,
+    total: acc.total + row.total
+  }), { date: 'TOTAL', present: 0, late: 0, absent: 0, total: 0 });
+
+  const rows = [...dailyRows, totals].map((row) => ({
+    date: row.date,
+    present: row.present,
+    late: row.late,
+    absent: row.absent,
+    totalRecorded: row.total
+  }));
+
+  const csv = generateAttendanceSummaryCsv(rows);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="all-day-attendance.csv"');
+  return res.send(csv);
+}
+
 export async function getEmployeeById(req: Request, res: Response) {
   const employeeId = String(req.params.id);
   await reconcileEmployeePerformance(employeeId);
@@ -353,9 +403,24 @@ export async function createEmployee(req: Request, res: Response) {
   const input = employeeSchema.parse(req.body);
   const passwordHash = await bcrypt.hash(input.password, 10);
 
-  const latest = await prisma.employee.findFirst({ orderBy: { createdAt: 'desc' } });
-  const nextNumber = latest ? Number(latest.employeeCode.split('-')[1]) + 1 : 1;
+  const employees = await prisma.employee.findMany({ select: { employeeCode: true } });
+  const nextNumber = employees.reduce((max, employee) => {
+    const value = Number(employee.employeeCode.split('-')[1]);
+    return Number.isFinite(value) && value > max ? value : max;
+  }, 0) + 1;
   const employeeCode = `EMP-${String(nextNumber).padStart(3, '0')}`;
+  const existingUser = await prisma.user.findUnique({
+    where: { email: input.email },
+    include: { employee: true }
+  });
+
+  if (existingUser?.role === 'ADMIN') {
+    return res.status(StatusCodes.CONFLICT).json({ message: 'The admin email cannot be used for an employee account.' });
+  }
+
+  if (existingUser?.employee) {
+    return res.status(StatusCodes.CONFLICT).json({ message: 'An employee already uses this email address.' });
+  }
 
   const employee = await prisma.employee.create({
     data: {
@@ -373,13 +438,17 @@ export async function createEmployee(req: Request, res: Response) {
       managerName: input.managerName || null,
       permissions: input.permissions,
       startDate: new Date(input.startDate),
-      user: {
-        create: {
-          email: input.email,
-          passwordHash,
-          role: 'EMPLOYEE'
-        }
-      },
+      user: existingUser
+        ? {
+            connect: { id: existingUser.id }
+          }
+        : {
+            create: {
+              email: input.email,
+              passwordHash,
+              role: 'EMPLOYEE'
+            }
+          },
       notifications: {
         create: [
           {
@@ -391,6 +460,16 @@ export async function createEmployee(req: Request, res: Response) {
     },
     include: { user: { select: { id: true, email: true, role: true } } }
   });
+
+  if (existingUser) {
+    await prisma.user.update({
+      where: { id: existingUser.id },
+      data: {
+        passwordHash,
+        role: 'EMPLOYEE'
+      }
+    });
+  }
 
   return res.status(StatusCodes.CREATED).json(employee);
 }
@@ -439,7 +518,7 @@ export async function deleteEmployee(req: Request, res: Response) {
     return res.status(StatusCodes.NOT_FOUND).json({ message: 'Employee not found.' });
   }
 
-  await prisma.employee.delete({ where: { id: employeeId } });
+  await prisma.user.delete({ where: { id: employee.userId } });
   return res.status(StatusCodes.NO_CONTENT).send();
 }
 

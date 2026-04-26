@@ -258,8 +258,12 @@ async function main() {
     });
   }
 
-  for (const employee of employeeSeeds) {
-    await upsertEmployee(employee, employeePasswordHash);
+  if (process.env.SEED_DEMO_DATA === 'true') {
+    for (const employee of employeeSeeds) {
+      await upsertEmployee(employee, employeePasswordHash);
+    }
+  } else {
+    console.log('Demo employee seed skipped. Set SEED_DEMO_DATA=true to recreate sample employees.');
   }
 
   console.log('Seed complete.');

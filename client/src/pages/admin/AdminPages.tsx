@@ -241,6 +241,7 @@ export function AdminEmployeesPage() {
           <>
             <Button variant="secondary" onClick={() => downloadFile('/admin/employees/export?format=csv', 'employees.csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
             <Button variant="secondary" onClick={() => downloadFile('/admin/employees/export?format=pdf', 'employees.pdf')}><Download className="mr-2 h-4 w-4" />PDF</Button>
+            <Button variant="secondary" onClick={() => downloadFile('/admin/attendance/export', 'all-day-attendance.csv')}><Download className="mr-2 h-4 w-4" />All Day Attendance</Button>
             <Button onClick={() => { setEditingEmployee(null); setModalOpen(true); }}><Plus className="mr-2 h-4 w-4" />Add employee</Button>
           </>
         )}
@@ -371,6 +372,11 @@ export function AdminEmployeesPage() {
       </Card>
 
       <Modal open={modalOpen} title={editingEmployee ? 'Edit employee' : 'Add employee'} onClose={() => { setModalOpen(false); setEditingEmployee(null); }}>
+        {(createMutation.error || updateMutation.error) ? (
+          <div className="mb-4 rounded-2xl border border-danger/20 bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
+            {(createMutation.error || updateMutation.error)?.message}
+          </div>
+        ) : null}
         <EmployeeForm
           initialValue={editingEmployee ? {
             fullName: editingEmployee.fullName,

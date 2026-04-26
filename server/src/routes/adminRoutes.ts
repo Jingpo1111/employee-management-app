@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   createEmployee,
   deleteEmployee,
+  exportAllDayAttendance,
   exportEmployees,
   getAdminNotifications,
   getDashboard,
@@ -22,6 +23,7 @@ router.use(requireAuth, requireRole('ADMIN'));
 router.get('/dashboard', getDashboard);
 router.get('/notifications', getAdminNotifications);
 router.get('/attendance', getDailyAttendance);
+router.get('/attendance/export', exportAllDayAttendance);
 router.get('/qr-code', getDailyQrCode);
 router.post('/qr-code', regenerateDailyQrCode);
 router.patch('/qr-code', updateDailyQrCodeStatus);
