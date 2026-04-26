@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Bell, CheckCircle2, Clock3, Radio, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../lib/api';
+import { countNewNotifications, getNotificationViewedAt, setNotificationsViewedNow } from '../lib/notifications';
 import { formatDate } from '../lib/utils';
 import { Notification as AppNotification } from '../types';
 import { Badge } from '../components/ui/Badge';
@@ -42,6 +43,8 @@ export function NotificationsPage() {
     enabled: Boolean(user),
     refetchInterval: 30000
   });
+  const [pageViewedAt, setPageViewedAt] = useState(() => getNotificationViewedAt(user?.id, user?.role));
+  const viewedAt = pageViewedAt;
 
   const filteredNotifications = useMemo(() => {
     const value = search.trim().toLowerCase();
@@ -54,8 +57,14 @@ export function NotificationsPage() {
     );
   }, [data, search]);
 
-  const unreadCount = data.filter((notification) => !notification.read).length;
+  const unreadCount = countNewNotifications(data, viewedAt);
   const todayCount = data.filter((notification) => new Date(notification.createdAt).toDateString() === new Date().toDateString()).length;
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      setPageViewedAt(setNotificationsViewedNow(user.id, user.role));
+    }
+  }, [isLoading, user, data.length]);
 
   if (isLoading) {
     return <LoadingState label={t('notifications.loading')} />;
@@ -111,12 +120,12 @@ export function NotificationsPage() {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex min-w-0 gap-4">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-accentSoft text-accent">
-                        {notification.read ? <CheckCircle2 className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
+                        {new Date(notification.createdAt).getTime() <= new Date(viewedAt || 0).getTime() ? <CheckCircle2 className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
                       </div>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <h4 className="font-display text-xl font-semibold">{notification.title}</h4>
-                          {!notification.read ? <Badge label={t('employee.new')} variant="info" /> : null}
+                          {new Date(notification.createdAt).getTime() > new Date(viewedAt || 0).getTime() ? <Badge label={t('employee.new')} variant="info" /> : null}
                         </div>
                         <p className="mt-2 max-w-4xl text-sm leading-6 text-muted">{notification.message}</p>
                         <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-muted">

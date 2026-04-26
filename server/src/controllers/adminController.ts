@@ -9,6 +9,10 @@ import { createQrToken, dateKeyToDate, dateToDateKey, getDateKeyInTimezone } fro
 import { generateEmployeeCsv } from '../utils/csv.js';
 import { generateEmployeePdf } from '../utils/pdf.js';
 
+const avatarSchema = z.string().refine((value) => {
+  return value === '' || value.startsWith('data:image/') || z.string().url().safeParse(value).success;
+}, 'Avatar must be an image URL or uploaded image.').optional();
+
 const employeeSchema = z.object({
   fullName: z.string().min(2),
   email: z.string().email(),
@@ -19,7 +23,7 @@ const employeeSchema = z.object({
   location: z.string().min(2),
   status: z.string().min(2),
   bio: z.string().optional().or(z.literal('')),
-  avatar: z.string().url().optional().or(z.literal('')),
+  avatar: avatarSchema,
   performanceScore: z.number().min(0).max(100),
   managerName: z.string().optional().or(z.literal('')),
   permissions: z.array(z.string()).min(1),

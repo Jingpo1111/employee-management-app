@@ -1,11 +1,12 @@
 import { Bell, BriefcaseBusiness, CalendarDays, ChartColumn, LayoutDashboard, LogOut, Menu, QrCode, Search, Settings2, Sparkles, UserCircle2, Users, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { LanguageToggle } from '../ui/LanguageToggle';
 import { apiFetch } from '../../lib/api';
+import { addNotificationViewedListener, countNewNotifications, getNotificationViewedAt } from '../../lib/notifications';
 import { cn } from '../../lib/utils';
 import { useLanguage } from '../../context/LanguageContext';
 import { Notification as AppNotification } from '../../types';
@@ -46,6 +47,7 @@ export function AppShell() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [notificationViewedAt, setNotificationViewedAt] = useState(() => getNotificationViewedAt(user?.id, user?.role));
   const location = useLocation();
   const items = user?.role === 'ADMIN' ? adminItems : employeeItems;
   const leaf = location.pathname.split('/').slice(-1)[0];
@@ -60,7 +62,16 @@ export function AppShell() {
     enabled: Boolean(user),
     refetchInterval: 30000
   });
-  const unreadCount = notifications.filter((notification) => !notification.read).length;
+  const unreadCount = countNewNotifications(notifications, notificationViewedAt);
+
+  useEffect(() => {
+    function refreshViewedAt() {
+      setNotificationViewedAt(getNotificationViewedAt(user?.id, user?.role));
+    }
+
+    refreshViewedAt();
+    return addNotificationViewedListener(refreshViewedAt);
+  }, [user?.id, user?.role]);
 
   return (
     <div className="min-h-screen px-3 py-3 sm:px-5 lg:px-6">

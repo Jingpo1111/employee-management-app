@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Bell, Clock3, PencilLine, Sparkles, Target } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Bell, Clock3, ImagePlus, PencilLine, Sparkles, Target, Trash2 } from 'lucide-react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/api';
+import { countNewNotifications, getNotificationViewedAt } from '../../lib/notifications';
 import { formatDate } from '../../lib/utils';
 import { Employee, EmployeeDashboardResponse } from '../../types';
 import { Badge } from '../../components/ui/Badge';
@@ -29,6 +30,7 @@ function SectionHero({ eyebrow, title, description }: { eyebrow: string; title: 
 
 export function EmployeeOverviewPage() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { data, isLoading } = useQuery({
     queryKey: ['employee-dashboard'],
     queryFn: () => apiFetch<EmployeeDashboardResponse>('/employee/dashboard')
@@ -42,7 +44,7 @@ export function EmployeeOverviewPage() {
     { label: t('employee.performanceScore'), value: `${data.overview.performanceScore}%`, icon: Sparkles, tint: 'from-[#ff8a64] to-[#f59e0b]' },
     { label: t('employee.attendanceRate'), value: data.overview.attendanceRate, icon: Clock3, tint: 'from-[#14b8a6] to-[#0ea5e9]' },
     { label: t('employee.completedTasks'), value: String(data.overview.completedTasks), icon: Target, tint: 'from-[#2563eb] to-[#38bdf8]' },
-    { label: t('employee.unreadMessages'), value: String(data.notifications.filter((item) => !item.read).length), icon: Bell, tint: 'from-[#ef4444] to-[#fb7185]' }
+    { label: t('employee.unreadMessages'), value: String(countNewNotifications(data.notifications, getNotificationViewedAt(user?.id, user?.role))), icon: Bell, tint: 'from-[#ef4444] to-[#fb7185]' }
   ];
 
   return (
@@ -132,6 +134,7 @@ export function EmployeeProfilePage() {
   });
 
   const [form, setForm] = useState({ fullName: '', title: '', phone: '', location: '', bio: '', avatar: '' });
+  const [photoError, setPhotoError] = useState('');
 
   const updateMutation = useMutation({
     mutationFn: (payload: typeof form) => apiFetch<Employee>('/employee/profile', { method: 'PUT', body: JSON.stringify(payload) }),
@@ -153,6 +156,31 @@ export function EmployeeProfilePage() {
     }
   }, [data]);
 
+  function handlePhotoUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Please choose an image file.');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setPhotoError('Please choose an image smaller than 2 MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((current) => ({ ...current, avatar: String(reader.result) }));
+      setPhotoError('');
+    };
+    reader.onerror = () => setPhotoError('Could not read this image. Please try another file.');
+    reader.readAsDataURL(file);
+  }
+
   if (isLoading || !data) {
     return <LoadingState label="Loading profile..." />;
   }
@@ -168,7 +196,7 @@ export function EmployeeProfilePage() {
       <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
         <Card>
           <div className="flex items-center gap-4">
-            <img className="h-20 w-20 rounded-[1.6rem] object-cover" src={data.avatar || 'https://placehold.co/120x120'} alt={data.fullName} />
+            <img className="h-20 w-20 rounded-[1.6rem] object-cover" src={form.avatar || data.avatar || 'https://placehold.co/120x120'} alt={data.fullName} />
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-muted">Employee profile</p>
               <h3 className="mt-2 font-display text-2xl font-semibold">{data.fullName}</h3>
@@ -197,7 +225,36 @@ export function EmployeeProfilePage() {
             <Field label="Job title"><Input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} /></Field>
             <Field label="Phone"><Input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} /></Field>
             <Field label="Location"><Input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} /></Field>
-            <div className="md:col-span-2"><Field label="Avatar URL"><Input value={form.avatar} onChange={(event) => setForm((current) => ({ ...current, avatar: event.target.value }))} /></Field></div>
+            <div className="md:col-span-2">
+              <Field label="Profile photo" hint="JPG, PNG, or WebP under 2 MB" error={photoError}>
+                <div className="rounded-[1.4rem] border border-border bg-white/55 p-4 dark:bg-white/5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <img className="h-24 w-24 rounded-[1.4rem] object-cover shadow-card" src={form.avatar || 'https://placehold.co/160x160'} alt="Profile preview" />
+                    <div className="flex-1 space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <label className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-accentSoft px-4 py-2.5 text-sm font-semibold text-accent transition hover:bg-accent hover:text-white">
+                          <ImagePlus className="mr-2 h-4 w-4" />
+                          Upload photo
+                          <input className="sr-only" type="file" accept="image/*" onChange={handlePhotoUpload} />
+                        </label>
+                        {form.avatar ? (
+                          <Button type="button" variant="ghost" onClick={() => setForm((current) => ({ ...current, avatar: '' }))}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Remove
+                          </Button>
+                        ) : null}
+                      </div>
+                      <Input
+                        value={form.avatar.startsWith('data:image/') ? 'Uploaded image selected' : form.avatar}
+                        onChange={(event) => setForm((current) => ({ ...current, avatar: event.target.value }))}
+                        placeholder="Or paste an image URL"
+                        readOnly={form.avatar.startsWith('data:image/')}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Field>
+            </div>
             <div className="md:col-span-2"><Field label="Bio"><Textarea value={form.bio} onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))} /></Field></div>
             <div className="md:col-span-2 flex justify-end"><Button type="submit">{updateMutation.isPending ? 'Saving...' : 'Save changes'}</Button></div>
           </form>

@@ -7,13 +7,17 @@ import { reconcileEmployeePerformance, reconcileEmployeePerformanceForUser } fro
 import { sendTelegramAttendanceMessage } from '../services/telegramService.js';
 import { dateKeyToDate, getCheckInTimeLabel, getDateKeyInTimezone, getQrAttendanceStatus } from '../utils/date.js';
 
+const avatarSchema = z.string().refine((value) => {
+  return value === '' || value.startsWith('data:image/') || z.string().url().safeParse(value).success;
+}, 'Avatar must be an image URL or uploaded image.').optional();
+
 const profileSchema = z.object({
   fullName: z.string().min(2),
   title: z.string().min(2),
   phone: z.string().optional().or(z.literal('')),
   location: z.string().min(2),
   bio: z.string().optional().or(z.literal('')),
-  avatar: z.string().url().optional().or(z.literal(''))
+  avatar: avatarSchema
 });
 
 export async function getDashboard(req: Request, res: Response) {
