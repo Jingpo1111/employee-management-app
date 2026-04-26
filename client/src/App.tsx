@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AdminAnalyticsPage, AdminAttendancePage, AdminEmployeeDetailPage, AdminEmployeesPage, AdminOverviewPage } from './pages/admin/AdminPages';
 import { AdminQrAccessPage } from './pages/admin/AdminQrPage';
 import { EmployeeOverviewPage, EmployeeProfilePage, EmployeeWorkspacePage } from './pages/employee/EmployeePages';
+import { NotificationsPage } from './pages/NotificationsPage';
 import { ScanPage } from './pages/ScanPage';
 import { LoadingState } from './components/ui/LoadingState';
 
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/admin/overview" element={<AdminOverviewPage />} />
           <Route path="/admin/employees" element={<AdminEmployeesPage />} />
           <Route path="/admin/attendance" element={<AdminAttendancePage />} />
+          <Route path="/admin/notifications" element={<NotificationsPage />} />
           <Route path="/admin/employees/:id" element={<AdminEmployeeDetailPage />} />
           <Route path="/admin/qr-access" element={<AdminQrAccessPage />} />
           <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
@@ -56,6 +58,7 @@ export default function App() {
       <Route element={<ProtectedRoute role="EMPLOYEE" />}>
         <Route element={<AppShell />}>
           <Route path="/employee/overview" element={<EmployeeOverviewPage />} />
+          <Route path="/employee/notifications" element={<NotificationsPage />} />
           <Route path="/employee/profile" element={<EmployeeProfilePage />} />
           <Route path="/employee/workspace" element={<EmployeeWorkspacePage />} />
         </Route>
