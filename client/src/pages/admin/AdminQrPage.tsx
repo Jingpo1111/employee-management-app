@@ -9,6 +9,13 @@ import { Badge } from '../../components/ui/Badge';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { formatDate } from '../../lib/utils';
 
+function attendanceVariant(status?: string) {
+  if (status === 'PRESENT') return 'success';
+  if (status === 'ABSENT') return 'danger';
+  if (status === 'REMOTE') return 'info';
+  return 'warning';
+}
+
 function SectionHero() {
   return (
     <section className="panel-strong relative overflow-hidden p-6 sm:p-8">
@@ -140,10 +147,15 @@ export function AdminQrAccessPage() {
           <p className="mt-2 text-sm text-muted">Employees who scanned successfully today appear here. One claim per employee per QR.</p>
           <div className="mt-5 space-y-3">
             {data.qrCode?.qrLogs.length ? data.qrCode.qrLogs.map((log) => (
-              <div key={log.id} className="metric-tile flex items-center justify-between gap-4">
+              <div key={log.id} className="metric-tile flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-semibold">{log.employee.fullName}</p>
-                  <p className="text-sm text-muted">{log.employee.employeeCode}</p>
+                  <p className="text-sm text-muted">{log.employee.employeeCode} • {log.employee.title} • {log.employee.department}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Badge label={log.attendance?.status || 'SCANNED'} variant={attendanceVariant(log.attendance?.status)} />
+                    <span className="text-sm text-muted">Check-in: {log.attendance?.checkIn || 'Recorded'}</span>
+                    <span className="text-sm text-muted">Performance: {log.employee.performanceScore}%</span>
+                  </div>
                 </div>
                 <div className="text-right text-sm text-muted">
                   <p>{formatDate(log.scannedAt)}</p>

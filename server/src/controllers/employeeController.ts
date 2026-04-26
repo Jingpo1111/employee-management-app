@@ -193,21 +193,36 @@ export async function claimQrAttendance(req: Request, res: Response) {
 
   const performanceScore = await reconcileEmployeePerformance(employee.id);
 
-  try {
-    telegramNotification = await sendTelegramAttendanceMessage({
-      employeeName: employee.fullName,
-      employeeCode: employee.employeeCode,
-      dateKey,
-      checkIn: attendance.checkIn,
-      attendanceStatus: attendance.status,
-      performanceScore,
-      alreadyClaimed: Boolean(existingLog)
+  if (!existingLog) {
+    await prisma.notification.create({
+      data: {
+        employeeId: employee.id,
+        title: 'Attendance scan successful',
+        message: `Your ${attendance.status.toLowerCase()} check-in was recorded at ${attendance.checkIn}. Performance is now ${performanceScore}%.`
+      }
     });
-  } catch (error) {
-    console.error(error);
+
+    try {
+      telegramNotification = await sendTelegramAttendanceMessage({
+        employeeName: employee.fullName,
+        employeeCode: employee.employeeCode,
+        dateKey,
+        checkIn: attendance.checkIn,
+        attendanceStatus: attendance.status,
+        performanceScore,
+        alreadyClaimed: false
+      });
+    } catch (error) {
+      console.error(error);
+      telegramNotification = {
+        sent: false,
+        reason: error instanceof Error ? error.message : 'Telegram notification failed.'
+      };
+    }
+  } else {
     telegramNotification = {
       sent: false,
-      reason: error instanceof Error ? error.message : 'Telegram notification failed.'
+      reason: 'Telegram notification already sent for this employee today.'
     };
   }
 

@@ -72,8 +72,12 @@ export async function getDailyQrCode(_req: Request, res: Response) {
         include: {
           employee: {
             select: {
+              id: true,
               fullName: true,
-              employeeCode: true
+              employeeCode: true,
+              title: true,
+              department: true,
+              performanceScore: true
             }
           }
         },
@@ -82,9 +86,44 @@ export async function getDailyQrCode(_req: Request, res: Response) {
     }
   });
 
+  const attendanceByEmployeeId = new Map<string, { checkIn: string | null; checkOut: string | null; status: string; note: string | null }>();
+
+  if (qrCode?.qrLogs.length) {
+    const attendanceRecords = await prisma.attendanceRecord.findMany({
+      where: {
+        date: dateKeyToDate(dateKey),
+        employeeId: { in: qrCode.qrLogs.map((log) => log.employeeId) }
+      },
+      select: {
+        employeeId: true,
+        checkIn: true,
+        checkOut: true,
+        status: true,
+        note: true
+      }
+    });
+
+    attendanceRecords.forEach((record) => {
+      attendanceByEmployeeId.set(record.employeeId, {
+        checkIn: record.checkIn,
+        checkOut: record.checkOut,
+        status: record.status,
+        note: record.note
+      });
+    });
+  }
+
   return res.json({
     dateKey,
-    qrCode,
+    qrCode: qrCode
+      ? {
+          ...qrCode,
+          qrLogs: qrCode.qrLogs.map((log) => ({
+            ...log,
+            attendance: attendanceByEmployeeId.get(log.employeeId) || null
+          }))
+        }
+      : null,
     stats: {
       scanCount: qrCode?.qrLogs.length || 0
     }

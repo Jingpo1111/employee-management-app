@@ -105,9 +105,19 @@ export type DailyQrCode = {
     id: string;
     scannedAt: string;
     source?: string | null;
+    attendance?: {
+      checkIn?: string | null;
+      checkOut?: string | null;
+      status: AttendanceRecord['status'];
+      note?: string | null;
+    } | null;
     employee: {
+      id: string;
       fullName: string;
       employeeCode: string;
+      title: string;
+      department: string;
+      performanceScore: number;
     };
   }>;
 };
