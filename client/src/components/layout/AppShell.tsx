@@ -1,11 +1,14 @@
 import { Bell, BriefcaseBusiness, CalendarDays, ChartColumn, LayoutDashboard, LogOut, Menu, QrCode, Search, Settings2, Sparkles, UserCircle2, Users, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { LanguageToggle } from '../ui/LanguageToggle';
-import { cn } from '../../lib/utils';
+import { apiFetch } from '../../lib/api';
+import { cn, formatDate } from '../../lib/utils';
 import { useLanguage } from '../../context/LanguageContext';
+import { Notification as AppNotification } from '../../types';
 
 type NavItem = {
   to: string;
@@ -42,6 +45,7 @@ export function AppShell() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const location = useLocation();
   const items = user?.role === 'ADMIN' ? adminItems : employeeItems;
   const leaf = location.pathname.split('/').slice(-1)[0];
@@ -49,6 +53,14 @@ export function AppShell() {
   const pageEyebrow = user?.role === 'ADMIN' ? t('shell.adminEyebrow') : t('shell.employeeEyebrow');
 
   const activeItem = useMemo(() => items.find((item) => location.pathname.startsWith(item.to)) || items[0], [items, location.pathname]);
+  const notificationsPath = user?.role === 'ADMIN' ? '/admin/notifications' : '/employee/notifications';
+  const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
+    queryKey: ['shell-notifications', user?.role],
+    queryFn: () => apiFetch<AppNotification[]>(notificationsPath),
+    enabled: Boolean(user),
+    refetchInterval: 30000
+  });
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
 
   return (
     <div className="min-h-screen px-3 py-3 sm:px-5 lg:px-6">
@@ -136,9 +148,59 @@ export function AppShell() {
                 </div>
                 <LanguageToggle />
                 <ThemeToggle />
-                <button className="rounded-2xl border border-border bg-surface/80 p-2.5 text-muted shadow-sm hover:text-text" aria-label="Notifications">
-                  <Bell className="h-5 w-5" />
-                </button>
+                <div className="relative">
+                  <button
+                    className={cn(
+                      'relative rounded-2xl border border-border bg-surface/80 p-2.5 text-muted shadow-sm transition hover:-translate-y-0.5 hover:text-text',
+                      notificationsOpen && 'border-accent/40 text-text ring-4 ring-accent/10'
+                    )}
+                    aria-label="Notifications"
+                    aria-expanded={notificationsOpen}
+                    onClick={() => setNotificationsOpen((value) => !value)}
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white shadow-card">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    ) : null}
+                  </button>
+
+                  {notificationsOpen ? (
+                    <div className="absolute right-0 top-14 z-50 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-[1.6rem] border border-border bg-surface/95 shadow-shell backdrop-blur-xl">
+                      <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+                        <div>
+                          <p className="font-display text-lg font-semibold">{t('notifications.title')}</p>
+                          <p className="text-xs text-muted">{unreadCount} {t('notifications.unread')}</p>
+                        </div>
+                        <div className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">
+                          Live
+                        </div>
+                      </div>
+
+                      <div className="max-h-[420px] overflow-y-auto p-2">
+                        {notificationsLoading ? (
+                          <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted">{t('notifications.loading')}</div>
+                        ) : notifications.length ? (
+                          notifications.map((notification) => (
+                            <div key={notification.id} className="group rounded-2xl p-3 transition hover:bg-muted/10">
+                              <div className="flex items-start gap-3">
+                                <span className={cn('mt-1 h-2.5 w-2.5 rounded-full', notification.read ? 'bg-muted' : 'bg-accent shadow-[0_0_0_5px_rgba(46,144,250,0.12)]')} />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-text">{notification.title}</p>
+                                  <p className="mt-1 text-sm leading-5 text-muted">{notification.message}</p>
+                                  <p className="mt-2 text-xs font-medium text-muted">{formatDate(notification.createdAt)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted">{t('notifications.empty')}</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
                 <button className="rounded-2xl border border-border bg-surface/80 p-2.5 text-muted shadow-sm hover:text-text" aria-label="Settings">
                   <Settings2 className="h-5 w-5" />
                 </button>

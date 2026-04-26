@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { prisma } from '../config/prisma.js';
 import { employeeSelect, getAdminDashboardMetrics } from '../services/analyticsService.js';
 import { reconcileAllEmployeePerformance, reconcileEmployeePerformance } from '../services/attendancePolicyService.js';
-import { createQrToken, dateKeyToDate, getDateKeyInTimezone } from '../utils/date.js';
+import { createQrToken, dateKeyToDate, dateToDateKey, getDateKeyInTimezone } from '../utils/date.js';
 import { generateEmployeeCsv } from '../utils/csv.js';
 import { generateEmployeePdf } from '../utils/pdf.js';
 
@@ -128,6 +128,75 @@ export async function getDailyQrCode(_req: Request, res: Response) {
       scanCount: qrCode?.qrLogs.length || 0
     }
   });
+}
+
+export async function getAdminNotifications(_req: Request, res: Response) {
+  await reconcileAllEmployeePerformance();
+
+  const logs = await prisma.qrAttendanceLog.findMany({
+    take: 20,
+    orderBy: { scannedAt: 'desc' },
+    include: {
+      dailyQrCode: {
+        select: {
+          dateKey: true
+        }
+      },
+      employee: {
+        select: {
+          id: true,
+          fullName: true,
+          employeeCode: true,
+          title: true,
+          department: true,
+          performanceScore: true
+        }
+      }
+    }
+  });
+
+  const attendanceRecords = logs.length
+    ? await prisma.attendanceRecord.findMany({
+        where: {
+          OR: logs.map((log) => ({
+            employeeId: log.employeeId,
+            date: dateKeyToDate(log.dailyQrCode.dateKey)
+          }))
+        },
+        select: {
+          employeeId: true,
+          date: true,
+          checkIn: true,
+          status: true,
+          note: true
+        }
+      })
+    : [];
+
+  const attendanceByEmployeeDate = new Map(
+    attendanceRecords.map((record) => [`${record.employeeId}:${dateToDateKey(record.date)}`, record])
+  );
+
+  const notifications = logs.map((log) => {
+    const attendance = attendanceByEmployeeDate.get(`${log.employeeId}:${log.dailyQrCode.dateKey}`);
+    const status = attendance?.status || 'PRESENT';
+    const checkIn = attendance?.checkIn || new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Phnom_Penh',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(log.scannedAt);
+
+    return {
+      id: log.id,
+      title: `${log.employee.fullName} scanned attendance QR`,
+      message: `Employee ${log.employee.employeeCode} | ${log.employee.department} | Status: ${status} | Time: ${checkIn} | Performance: ${log.employee.performanceScore}%.`,
+      read: false,
+      createdAt: log.scannedAt
+    };
+  });
+
+  return res.json(notifications);
 }
 
 export async function regenerateDailyQrCode(_req: Request, res: Response) {

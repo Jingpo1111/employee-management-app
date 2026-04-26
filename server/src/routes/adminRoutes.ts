@@ -3,6 +3,7 @@ import {
   createEmployee,
   deleteEmployee,
   exportEmployees,
+  getAdminNotifications,
   getDashboard,
   getDailyQrCode,
   getDailyAttendance,
@@ -19,6 +20,7 @@ const router = Router();
 
 router.use(requireAuth, requireRole('ADMIN'));
 router.get('/dashboard', getDashboard);
+router.get('/notifications', getAdminNotifications);
 router.get('/attendance', getDailyAttendance);
 router.get('/qr-code', getDailyQrCode);
 router.post('/qr-code', regenerateDailyQrCode);
