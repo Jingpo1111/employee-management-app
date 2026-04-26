@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Download, Pencil, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react';
 import { apiFetch, downloadFile } from '../../lib/api';
 import { formatDate } from '../../lib/utils';
-import { AdminDashboardResponse, Employee, PaginatedEmployees } from '../../types';
+import { AdminDashboardResponse, DailyAttendanceResponse, Employee, PaginatedEmployees } from '../../types';
 import { AttendanceTrendChart } from '../../components/charts/AttendanceTrendChart';
 import { DepartmentChart } from '../../components/charts/DepartmentChart';
 import { StatCard } from '../../components/layout/StatCard';
@@ -17,6 +17,7 @@ import { Input } from '../../components/ui/Input';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { Modal } from '../../components/ui/Modal';
 import { Textarea } from '../../components/ui/Textarea';
+import { useLanguage } from '../../context/LanguageContext';
 
 const defaultForm = {
   fullName: '',
@@ -398,6 +399,90 @@ export function AdminEmployeesPage() {
 
 export function AdminAnalyticsPage() {
   return <AdminOverviewPage />;
+}
+
+function attendanceVariant(status: string) {
+  if (status === 'PRESENT') return 'success';
+  if (status === 'ABSENT') return 'danger';
+  if (status === 'REMOTE') return 'info';
+  return 'warning';
+}
+
+export function AdminAttendancePage() {
+  const { t } = useLanguage();
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-attendance', date],
+    queryFn: () => apiFetch<DailyAttendanceResponse>(`/admin/attendance?date=${date}`)
+  });
+
+  const summaryItems = ['PRESENT', 'LATE', 'ABSENT', 'NOT_SCANNED'].map((status) => ({
+    status,
+    count: data?.summary[status] || 0
+  }));
+
+  return (
+    <div className="space-y-6">
+      <SectionHero
+        eyebrow={t('nav.attendance')}
+        title={t('attendance.title')}
+        description={t('attendance.description')}
+        actions={(
+          <div className="min-w-[240px]">
+            <Field label={t('attendance.date')}>
+              <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+            </Field>
+          </div>
+        )}
+      />
+
+      <div className="grid gap-4 md:grid-cols-4">
+        {summaryItems.map((item) => (
+          <Card key={item.status}>
+            <p className="text-sm text-muted">{t(`status.${item.status}` as Parameters<typeof t>[0])}</p>
+            <p className="mt-2 font-display text-3xl font-semibold">{item.count}</p>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        {isLoading || !data ? <LoadingState label={t('attendance.loading')} /> : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-muted">
+                <tr>
+                  <th className="px-4 py-3 font-medium">{t('attendance.employee')}</th>
+                  <th className="px-4 py-3 font-medium">{t('attendance.department')}</th>
+                  <th className="px-4 py-3 font-medium">{t('attendance.checkIn')}</th>
+                  <th className="px-4 py-3 font-medium">{t('attendance.status')}</th>
+                  <th className="px-4 py-3 font-medium">{t('attendance.performance')}</th>
+                  <th className="px-4 py-3 font-medium">{t('attendance.note')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.records.map((record) => {
+                  const status = record.attendance?.status || 'NOT_SCANNED';
+                  return (
+                    <tr key={record.employeeId} className="border-t border-border/70">
+                      <td className="px-4 py-4">
+                        <p className="font-semibold">{record.fullName}</p>
+                        <p className="text-muted">{record.employeeCode} • {record.title}</p>
+                      </td>
+                      <td className="px-4 py-4">{record.department}<div className="text-muted">{record.team}</div></td>
+                      <td className="px-4 py-4">{record.attendance?.checkIn || t('attendance.noCheckIn')}</td>
+                      <td className="px-4 py-4"><Badge label={t(`status.${status}` as Parameters<typeof t>[0])} variant={attendanceVariant(status)} /></td>
+                      <td className="px-4 py-4">{record.performanceScore}%</td>
+                      <td className="px-4 py-4 text-muted">{record.attendance?.note || t('attendance.noNote')}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
 }
 
 export function AdminEmployeeDetailPage() {

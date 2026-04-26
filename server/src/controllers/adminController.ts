@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { prisma } from '../config/prisma.js';
 import { employeeSelect, getAdminDashboardMetrics } from '../services/analyticsService.js';
 import { reconcileAllEmployeePerformance, reconcileEmployeePerformance } from '../services/attendancePolicyService.js';
-import { createQrToken, getDateKeyInTimezone } from '../utils/date.js';
+import { createQrToken, dateKeyToDate, getDateKeyInTimezone } from '../utils/date.js';
 import { generateEmployeeCsv } from '../utils/csv.js';
 import { generateEmployeePdf } from '../utils/pdf.js';
 
@@ -155,6 +155,65 @@ export async function listEmployees(req: Request, res: Response) {
       total,
       totalPages: Math.ceil(total / pageSize)
     }
+  });
+}
+
+export async function getDailyAttendance(req: Request, res: Response) {
+  await reconcileAllEmployeePerformance();
+  const dateKey = req.query.date ? String(req.query.date) : getDateKeyInTimezone();
+  const attendanceDate = dateKeyToDate(dateKey);
+
+  const employees = await prisma.employee.findMany({
+    select: {
+      id: true,
+      employeeCode: true,
+      fullName: true,
+      title: true,
+      department: true,
+      team: true,
+      performanceScore: true,
+      attendanceRecords: {
+        where: { date: attendanceDate },
+        take: 1
+      }
+    },
+    orderBy: { fullName: 'asc' }
+  });
+
+  const records = employees.map((employee) => {
+    const attendance = employee.attendanceRecords[0];
+
+    return {
+      employeeId: employee.id,
+      employeeCode: employee.employeeCode,
+      fullName: employee.fullName,
+      title: employee.title,
+      department: employee.department,
+      team: employee.team,
+      performanceScore: employee.performanceScore,
+      attendance: attendance
+        ? {
+            id: attendance.id,
+            date: attendance.date,
+            checkIn: attendance.checkIn,
+            checkOut: attendance.checkOut,
+            status: attendance.status,
+            note: attendance.note
+          }
+        : null
+    };
+  });
+
+  const summary = records.reduce<Record<string, number>>((acc, row) => {
+    const status = row.attendance?.status || 'NOT_SCANNED';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+
+  return res.json({
+    dateKey,
+    summary,
+    records
   });
 }
 

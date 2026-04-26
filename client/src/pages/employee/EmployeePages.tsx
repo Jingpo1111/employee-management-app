@@ -12,6 +12,7 @@ import { Input } from '../../components/ui/Input';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { Textarea } from '../../components/ui/Textarea';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 function SectionHero({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
   return (
@@ -27,6 +28,7 @@ function SectionHero({ eyebrow, title, description }: { eyebrow: string; title: 
 }
 
 export function EmployeeOverviewPage() {
+  const { t } = useLanguage();
   const { data, isLoading } = useQuery({
     queryKey: ['employee-dashboard'],
     queryFn: () => apiFetch<EmployeeDashboardResponse>('/employee/dashboard')
@@ -37,18 +39,18 @@ export function EmployeeOverviewPage() {
   }
 
   const cards = [
-    { label: 'Performance score', value: `${data.overview.performanceScore}%`, icon: Sparkles, tint: 'from-[#ff8a64] to-[#f59e0b]' },
-    { label: 'Attendance rate', value: data.overview.attendanceRate, icon: Clock3, tint: 'from-[#14b8a6] to-[#0ea5e9]' },
-    { label: 'Completed tasks', value: String(data.overview.completedTasks), icon: Target, tint: 'from-[#2563eb] to-[#38bdf8]' },
-    { label: 'Unread messages', value: String(data.notifications.filter((item) => !item.read).length), icon: Bell, tint: 'from-[#ef4444] to-[#fb7185]' }
+    { label: t('employee.performanceScore'), value: `${data.overview.performanceScore}%`, icon: Sparkles, tint: 'from-[#ff8a64] to-[#f59e0b]' },
+    { label: t('employee.attendanceRate'), value: data.overview.attendanceRate, icon: Clock3, tint: 'from-[#14b8a6] to-[#0ea5e9]' },
+    { label: t('employee.completedTasks'), value: String(data.overview.completedTasks), icon: Target, tint: 'from-[#2563eb] to-[#38bdf8]' },
+    { label: t('employee.unreadMessages'), value: String(data.notifications.filter((item) => !item.read).length), icon: Bell, tint: 'from-[#ef4444] to-[#fb7185]' }
   ];
 
   return (
     <div className="space-y-6">
       <SectionHero
-        eyebrow="My dashboard"
-        title={`Welcome back, ${data.overview.name.split(' ')[0]}.`}
-        description="Your personal dashboard is organized for fast scanning: current standing first, then attendance, active work, and admin messages."
+        eyebrow={t('employee.dashboard')}
+        title={`${t('employee.welcome')}, ${data.overview.name.split(' ')[0]}.`}
+        description={t('employee.dashboardDescription')}
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -68,22 +70,22 @@ export function EmployeeOverviewPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
         <Card>
-          <h3 className="font-display text-xl font-semibold">Attendance</h3>
+          <h3 className="font-display text-xl font-semibold">{t('employee.attendance')}</h3>
           <div className="mt-4 space-y-3">
             {data.attendance.map((item) => (
               <div key={item.id} className="metric-tile flex items-center justify-between gap-4">
                 <div>
                   <p className="font-semibold">{formatDate(item.date)}</p>
-                  <p className="text-sm text-muted">{item.checkIn || 'No check-in'} to {item.checkOut || 'No check-out'}</p>
+                  <p className="text-sm text-muted">{item.checkIn || t('attendance.noCheckIn')} to {item.checkOut || '-'}</p>
                 </div>
-                <Badge label={item.status} variant={item.status === 'PRESENT' ? 'success' : item.status === 'REMOTE' ? 'info' : 'warning'} />
+                <Badge label={t(`status.${item.status}` as Parameters<typeof t>[0])} variant={item.status === 'PRESENT' ? 'success' : item.status === 'REMOTE' ? 'info' : 'warning'} />
               </div>
             ))}
           </div>
         </Card>
 
         <Card>
-          <h3 className="font-display text-xl font-semibold">Current tasks</h3>
+          <h3 className="font-display text-xl font-semibold">{t('employee.currentTasks')}</h3>
           <div className="mt-4 space-y-3">
             {data.tasks.map((task) => (
               <div key={task.id} className="metric-tile">
@@ -105,13 +107,13 @@ export function EmployeeOverviewPage() {
       </div>
 
       <Card>
-        <h3 className="font-display text-xl font-semibold">Messages from admin</h3>
+        <h3 className="font-display text-xl font-semibold">{t('employee.messages')}</h3>
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {data.notifications.map((item) => (
             <div key={item.id} className="metric-tile">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-semibold">{item.title}</p>
-                {!item.read ? <Badge label="New" variant="info" /> : null}
+                {!item.read ? <Badge label={t('employee.new')} variant="info" /> : null}
               </div>
               <p className="mt-2 text-sm text-muted">{item.message}</p>
             </div>

@@ -5,6 +5,7 @@ import {
   exportEmployees,
   getDashboard,
   getDailyQrCode,
+  getDailyAttendance,
   getEmployeeById,
   listEmployees,
   regenerateDailyQrCode,
@@ -18,6 +19,7 @@ const router = Router();
 
 router.use(requireAuth, requireRole('ADMIN'));
 router.get('/dashboard', getDashboard);
+router.get('/attendance', getDailyAttendance);
 router.get('/qr-code', getDailyQrCode);
 router.post('/qr-code', regenerateDailyQrCode);
 router.patch('/qr-code', updateDailyQrCodeStatus);

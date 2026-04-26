@@ -119,3 +119,25 @@ export type DailyQrCodeResponse = {
     scanCount: number;
   };
 };
+
+export type DailyAttendanceResponse = {
+  dateKey: string;
+  summary: Record<string, number>;
+  records: Array<{
+    employeeId: string;
+    employeeCode: string;
+    fullName: string;
+    title: string;
+    department: string;
+    team: string;
+    performanceScore: number;
+    attendance: {
+      id: string;
+      date: string;
+      checkIn?: string | null;
+      checkOut?: string | null;
+      status: AttendanceRecord['status'];
+      note?: string | null;
+    } | null;
+  }>;
+};

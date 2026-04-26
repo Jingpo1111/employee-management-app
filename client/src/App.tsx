@@ -2,7 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
-import { AdminAnalyticsPage, AdminEmployeeDetailPage, AdminEmployeesPage, AdminOverviewPage } from './pages/admin/AdminPages';
+import { AdminAnalyticsPage, AdminAttendancePage, AdminEmployeeDetailPage, AdminEmployeesPage, AdminOverviewPage } from './pages/admin/AdminPages';
 import { AdminQrAccessPage } from './pages/admin/AdminQrPage';
 import { EmployeeOverviewPage, EmployeeProfilePage, EmployeeWorkspacePage } from './pages/employee/EmployeePages';
 import { ScanPage } from './pages/ScanPage';
@@ -47,6 +47,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route path="/admin/overview" element={<AdminOverviewPage />} />
           <Route path="/admin/employees" element={<AdminEmployeesPage />} />
+          <Route path="/admin/attendance" element={<AdminAttendancePage />} />
           <Route path="/admin/employees/:id" element={<AdminEmployeeDetailPage />} />
           <Route path="/admin/qr-access" element={<AdminQrAccessPage />} />
           <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />

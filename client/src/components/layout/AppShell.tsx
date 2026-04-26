@@ -1,47 +1,52 @@
-import { Bell, BriefcaseBusiness, ChartColumn, LayoutDashboard, LogOut, Menu, QrCode, Search, Settings2, Sparkles, UserCircle2, Users, X } from 'lucide-react';
+import { Bell, BriefcaseBusiness, CalendarDays, ChartColumn, LayoutDashboard, LogOut, Menu, QrCode, Search, Settings2, Sparkles, UserCircle2, Users, X } from 'lucide-react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { LanguageToggle } from '../ui/LanguageToggle';
 import { cn } from '../../lib/utils';
+import { useLanguage } from '../../context/LanguageContext';
 
 type NavItem = {
   to: string;
-  label: string;
+  labelKey: Parameters<ReturnType<typeof useLanguage>['t']>[0];
   icon: typeof LayoutDashboard;
-  caption: string;
+  captionKey: Parameters<ReturnType<typeof useLanguage>['t']>[0];
 };
 
 const adminItems: NavItem[] = [
-  { to: '/admin/overview', label: 'Overview', icon: LayoutDashboard, caption: 'Pulse and priorities' },
-  { to: '/admin/employees', label: 'Employees', icon: Users, caption: 'Directory and actions' },
-  { to: '/admin/qr-access', label: 'QR Access', icon: QrCode, caption: 'Daily scan control' },
-  { to: '/admin/analytics', label: 'Analytics', icon: ChartColumn, caption: 'Signals and trends' }
+  { to: '/admin/overview', labelKey: 'nav.overview', icon: LayoutDashboard, captionKey: 'nav.overviewCaption' },
+  { to: '/admin/employees', labelKey: 'nav.employees', icon: Users, captionKey: 'nav.employeesCaption' },
+  { to: '/admin/attendance', labelKey: 'nav.attendance', icon: CalendarDays, captionKey: 'nav.attendanceCaption' },
+  { to: '/admin/qr-access', labelKey: 'nav.qrAccess', icon: QrCode, captionKey: 'nav.qrCaption' },
+  { to: '/admin/analytics', labelKey: 'nav.analytics', icon: ChartColumn, captionKey: 'nav.analyticsCaption' }
 ];
 
 const employeeItems: NavItem[] = [
-  { to: '/employee/overview', label: 'Overview', icon: LayoutDashboard, caption: 'Daily summary' },
-  { to: '/employee/profile', label: 'Profile', icon: UserCircle2, caption: 'Personal details' },
-  { to: '/employee/workspace', label: 'Workspace', icon: BriefcaseBusiness, caption: 'Tasks and focus' }
+  { to: '/employee/overview', labelKey: 'nav.overview', icon: LayoutDashboard, captionKey: 'nav.overviewCaption' },
+  { to: '/employee/profile', labelKey: 'nav.profile', icon: UserCircle2, captionKey: 'nav.profileCaption' },
+  { to: '/employee/workspace', labelKey: 'nav.workspace', icon: BriefcaseBusiness, captionKey: 'nav.workspaceCaption' }
 ];
 
 const pageLabels: Record<string, string> = {
-  overview: 'Overview',
-  employees: 'Employees',
-  analytics: 'Analytics',
-  'qr-access': 'QR Access',
-  profile: 'Profile',
-  workspace: 'Workspace'
+  overview: 'nav.overview',
+  employees: 'nav.employees',
+  attendance: 'nav.attendance',
+  analytics: 'nav.analytics',
+  'qr-access': 'nav.qrAccess',
+  profile: 'nav.profile',
+  workspace: 'nav.workspace'
 };
 
 export function AppShell() {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const items = user?.role === 'ADMIN' ? adminItems : employeeItems;
   const leaf = location.pathname.split('/').slice(-1)[0];
-  const pageTitle = pageLabels[leaf] || 'Dashboard';
-  const pageEyebrow = user?.role === 'ADMIN' ? 'Operations command' : 'Personal workspace';
+  const pageTitle = pageLabels[leaf] ? t(pageLabels[leaf] as Parameters<typeof t>[0]) : 'Dashboard';
+  const pageEyebrow = user?.role === 'ADMIN' ? t('shell.adminEyebrow') : t('shell.employeeEyebrow');
 
   const activeItem = useMemo(() => items.find((item) => location.pathname.startsWith(item.to)) || items[0], [items, location.pathname]);
 
@@ -54,7 +59,7 @@ export function AppShell() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.34em] text-[#ffb38f]">Employee OS</p>
-              <h1 className="mt-2 font-display text-2xl font-semibold">People command</h1>
+              <h1 className="mt-2 font-display text-2xl font-semibold">{t('shell.brand')}</h1>
             </div>
             <button className="rounded-2xl border border-white/15 bg-white/5 p-2 lg:hidden" onClick={() => setOpen(false)} aria-label="Close navigation">
               <X className="h-5 w-5" />
@@ -62,8 +67,8 @@ export function AppShell() {
           </div>
 
           <div className="mt-6 rounded-[1.7rem] border border-white/10 bg-white/5 p-5">
-            <div className="hero-chip">{user?.role === 'ADMIN' ? 'Admin flow' : 'Employee flow'}</div>
-            <h2 className="mt-4 font-display text-[1.65rem] font-semibold leading-tight">{activeItem?.caption}</h2>
+            <div className="hero-chip">{user?.role === 'ADMIN' ? t('shell.adminFlow') : t('shell.employeeFlow')}</div>
+            <h2 className="mt-4 font-display text-[1.65rem] font-semibold leading-tight">{activeItem ? t(activeItem.captionKey) : ''}</h2>
             <p className="mt-2 text-sm text-slate-300">A brighter dashboard system with clearer hierarchy, calmer spacing, and faster mobile access.</p>
           </div>
 
@@ -88,8 +93,8 @@ export function AppShell() {
                         <Icon className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">{item.label}</p>
-                        <p className={cn('text-xs', isActive ? 'text-slate-500' : 'text-slate-400')}>{item.caption}</p>
+                        <p className="text-sm font-semibold">{t(item.labelKey)}</p>
+                        <p className={cn('text-xs', isActive ? 'text-slate-500' : 'text-slate-400')}>{t(item.captionKey)}</p>
                       </div>
                     </>
                   )}
@@ -127,8 +132,9 @@ export function AppShell() {
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="hidden items-center gap-2 rounded-2xl border border-border bg-surface/80 px-3 py-2 text-sm text-muted shadow-sm md:flex">
                   <Search className="h-4 w-4" />
-                  <span>Quick find</span>
+                  <span>{t('shell.quickFind')}</span>
                 </div>
+                <LanguageToggle />
                 <ThemeToggle />
                 <button className="rounded-2xl border border-border bg-surface/80 p-2.5 text-muted shadow-sm hover:text-text" aria-label="Notifications">
                   <Bell className="h-5 w-5" />
@@ -137,7 +143,7 @@ export function AppShell() {
                   <Settings2 className="h-5 w-5" />
                 </button>
                 <div className="hidden rounded-2xl border border-border bg-surface/85 px-3 py-2 shadow-sm sm:block">
-                  <p className="text-sm font-semibold">{user?.employee?.fullName || 'System Admin'}</p>
+                  <p className="text-sm font-semibold">{user?.employee?.fullName || t('shell.systemAdmin')}</p>
                   <p className="text-xs text-muted">{user?.email}</p>
                 </div>
                 <button className="rounded-2xl border border-border bg-surface/80 p-2.5 text-muted shadow-sm hover:text-danger" onClick={logout} aria-label="Log out">
